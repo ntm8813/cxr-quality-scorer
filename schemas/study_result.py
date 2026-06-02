@@ -1,14 +1,11 @@
-from pydantic import BaseModel, Field, ConfigDict
-from typing import List, Optional
-from schemas.axis_result import AxisResult, QualityFlag
+# schemas/study_result.py
+from pydantic import BaseModel, Field
+from typing import List, Dict, Any
+from schemas.axis_result import AxisResult
 
-
-class CompositeScore(BaseModel):
-    study_uid: str = Field(..., description="DICOM StudyInstanceUID")
-    composite_score: float = Field(..., ge=0.0, le=100.0, description="Weighted composite quality score 0-100")
-    overall_flag: QualityFlag = Field(..., description="Final accept / borderline / repeat decision")
-    axis_results: List[AxisResult] = Field(..., description="Per-axis breakdown")
-    summary_rationale: str = Field(default="", description="One-paragraph human-readable summary")
-
-    # Upgraded to Pydantic v2 format to clear deprecation warnings
-    model_config = ConfigDict(use_enum_values=True)
+class StudyResult(BaseModel):
+    study_uid: str
+    composite_score: float
+    overall_flag: str
+    axis_results: List[AxisResult]
+    metadata_summary: Dict[str, Any] = Field(default_factory=dict)
