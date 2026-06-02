@@ -1,2 +1,12 @@
-data/ 
-mlruns/ 
+# Machine Learning tracking logs
+mlruns/
+
+# Ignore all actual heavy data contents and subdirectories
+data/**/
+data/raw/*
+data/processed/*.h5
+data/processed/*.csv
+
+# But DO NOT ignore DVC tracking, configs, or data-specific .gitignores
+!data/**/.gitignore
+!*.dvc
