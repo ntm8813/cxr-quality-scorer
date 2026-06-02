@@ -13,7 +13,6 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    # Uses micromamba to read and spin up your environment.yml file directly
     - name: Setup Micromamba
       uses: mamba-org/setup-micromamba@v2
       with:
@@ -21,8 +20,12 @@ jobs:
         init-shell: bash
         cache-environment: true
 
-    # Runs your test suite completely inside the conda context
+    - name: Prepare test data directory
+      run: |
+        mkdir -p data/processed
+        # Generate a dummy HDF5 file so the test doesn't crash
+        python -c "import h5py; import numpy as np; f = h5py.File('data/processed/cxr_degraded.h5', 'w'); f.create_dataset('image', data=np.zeros((1, 1024, 1024))); f.close()"
+
     - name: Run tests
-      shell: bash -l {0}
       run: |
         pytest tests/ -v --tb=short
