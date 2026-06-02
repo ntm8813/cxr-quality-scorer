@@ -7,10 +7,14 @@ image:
 
 thresholds:
   laplacian_variance: 80
-  rotation_tolerance_deg: 5
+  laplacian_variance_borderline: 50
+  rotation_tolerance_deg: 3
+  rotation_borderline_deg: 5
   coverage_margin_px: 10
   ei_deviation_min: -1.0
   ei_deviation_max: 1.0
+  ei_deviation_borderline_min: -2.0
+  ei_deviation_borderline_max: 2.0
 
 score_ranges:
   repeat_max: 40
