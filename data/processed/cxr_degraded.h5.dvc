@@ -1,0 +1,5 @@
+outs:
+- md5: 250d8a5f7e8a1f59a5e267a2a0496424
+  size: 32265275667
+  hash: md5
+  path: cxr_degraded.h5

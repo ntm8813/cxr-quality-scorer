@@ -1,0 +1,5 @@
+outs:
+- md5: b622c7e02fd9a035f582ac7971b83f88
+  size: 1257028
+  hash: md5
+  path: degradation_manifest.csv
