@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from enum import Enum
 from typing import Optional, Dict, Any
 
@@ -27,5 +27,5 @@ class AxisResult(BaseModel):
     raw_metrics: Dict[str, Any] = Field(default_factory=dict, description="Raw numeric values used to compute score")
     rationale: str = Field(default="", description="Human-readable explanation of this score")
 
-    class Config:
-        use_enum_values = True
+    # Upgraded to Pydantic v2 format to clear deprecation warnings
+    model_config = ConfigDict(use_enum_values=True)

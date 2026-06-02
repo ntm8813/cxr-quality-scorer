@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional
 from schemas.axis_result import AxisResult, QualityFlag
 
@@ -10,5 +10,5 @@ class CompositeScore(BaseModel):
     axis_results: List[AxisResult] = Field(..., description="Per-axis breakdown")
     summary_rationale: str = Field(default="", description="One-paragraph human-readable summary")
 
-    class Config:
-        use_enum_values = True
+    # Upgraded to Pydantic v2 format to clear deprecation warnings
+    model_config = ConfigDict(use_enum_values=True)
