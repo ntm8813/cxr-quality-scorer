@@ -1,31 +1,29 @@
-from pydantic import BaseModel, Field, ConfigDict
+# schemas/axis_result.py
 from enum import Enum
-from typing import Optional, Dict, Any
+from pydantic import BaseModel, Field
+from typing import Dict, Any, Optional
 
+class AxisName(str, Enum):
+    EXPOSURE = "exposure"
+    SHARPNESS = "sharpness"
+    METADATA = "metadata"
+    ROTATION = "rotation"
+    COVERAGE = "coverage"
+    INSPIRATION = "inspiration"
+    ARTIFACT = "artifact"
 
 class QualityFlag(str, Enum):
     ACCEPTABLE = "acceptable"
     BORDERLINE = "borderline"
     REPEAT = "repeat"
 
-
-class AxisName(str, Enum):
-    SHARPNESS = "sharpness"
-    EXPOSURE = "exposure"
-    ROTATION = "rotation"
-    COVERAGE = "coverage"
-    INSPIRATION = "inspiration"
-    ARTIFACT = "artifact"
-    METADATA = "metadata"
-
-
 class AxisResult(BaseModel):
-    study_uid: str = Field(..., description="DICOM StudyInstanceUID")
-    axis: AxisName = Field(..., description="Which quality axis this result covers")
-    score: float = Field(..., ge=0.0, le=1.0, description="Normalised score, 1.0 = perfect quality")
-    flag: QualityFlag = Field(..., description="accept / borderline / repeat")
-    raw_metrics: Dict[str, Any] = Field(default_factory=dict, description="Raw numeric values used to compute score")
-    rationale: str = Field(default="", description="Human-readable explanation of this score")
-
-    # Upgraded to Pydantic v2 format to clear deprecation warnings
-    model_config = ConfigDict(use_enum_values=True)
+    """
+    Standardised assessment schema for a single quality axis evaluation.
+    """
+    study_uid: str
+    axis: AxisName
+    score: float = Field(..., ge=0.0, le=1.0, description="Normalized score from 0.0 (worst) to 1.0 (best)")
+    flag: QualityFlag = Field(..., description="Status flag: acceptable, borderline, or repeat")
+    raw_metrics: Dict[str, Any] = Field(default_factory=dict, description="Raw dictionary measurements for debugging")
+    rationale: Optional[str] = Field(None, description="Human-readable text string describing the system's reasoning")
