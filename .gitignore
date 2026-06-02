@@ -1,11 +1,13 @@
 # Machine Learning tracking logs
 mlruns/
+__pycache__/
+*.pyc
 
-# 1. Ignore everything inside the data directory recursively
-data/**/*
-data/
+# 1. Explicitly isolate only the ROOT data directory (using leading slashes)
+/data/
+/data/**/*
 
-# 2. Add explicit exemptions (!) for files we MUST track with Git
-!data/**/.gitignore
+# 2. Exemptions for Git tracking maps inside the root data directory
+!/data/**/.gitignore
 !*.dvc
 !**/*.dvc

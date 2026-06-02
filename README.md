@@ -1,1 +1,0 @@
-# cxr-quality-scorer
