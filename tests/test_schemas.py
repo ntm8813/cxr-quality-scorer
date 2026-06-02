@@ -1,46 +1,45 @@
+# tests/test_schemas.py
 import pytest
-from schemas.axis_result import AxisResult, QualityFlag, AxisName
-from schemas.study_result import CompositeScore
-
+from pydantic import ValidationError
+from schemas.axis_result import AxisResult, AxisName, QualityFlag
+from schemas.study_result import StudyResult
 
 def test_axis_result_valid():
+    """Verifies that a valid AxisResult passes Pydantic construction."""
     result = AxisResult(
-        study_uid="1.2.3.4.5",
-        axis=AxisName.SHARPNESS,
+        study_uid="1.2.3.4",
+        axis=AxisName.EXPOSURE,
         score=0.85,
         flag=QualityFlag.ACCEPTABLE,
-        raw_metrics={"laplacian_variance": 120.5},
-        rationale="Sharpness is within acceptable range."
+        raw_metrics={"mean_intensity": 128},
+        rationale="Exposure looks well balanced"
     )
     assert result.score == 0.85
     assert result.flag == "acceptable"
 
-
 def test_axis_result_score_out_of_range():
-    with pytest.raises(Exception):
+    """Verifies that an out-of-range score triggers a ValidationError."""
+    with pytest.raises(ValidationError):
         AxisResult(
-            study_uid="1.2.3.4.5",
+            study_uid="1.2.3.4",
             axis=AxisName.SHARPNESS,
-            score=1.5,  # invalid — must be 0.0 to 1.0
-            flag=QualityFlag.ACCEPTABLE,
-            raw_metrics={}
+            score=1.5,  # Invalid: Must be <= 1.0
+            flag=QualityFlag.ACCEPTABLE
         )
 
-
 def test_composite_score_valid():
-    axis = AxisResult(
-        study_uid="1.2.3.4.5",
-        axis=AxisName.EXPOSURE,
-        score=0.6,
-        flag=QualityFlag.BORDERLINE,
-        raw_metrics={"mean_pixel": 0.45}
+    """Verifies that a complete StudyResult compiles correctly."""
+    axis_data = [
+        AxisResult(study_uid="1.2.3.4", axis=AxisName.EXPOSURE, score=0.9, flag=QualityFlag.ACCEPTABLE),
+        AxisResult(study_uid="1.2.3.4", axis=AxisName.SHARPNESS, score=0.8, flag=QualityFlag.ACCEPTABLE)
+    ]
+    
+    study = StudyResult(
+        study_uid="1.2.3.4",
+        composite_score=0.85,
+        overall_flag=QualityFlag.ACCEPTABLE,
+        axis_results=axis_data,
+        metadata_summary={"modality": "CR"}
     )
-    study = CompositeScore(
-        study_uid="1.2.3.4.5",
-        composite_score=58.0,
-        overall_flag=QualityFlag.BORDERLINE,
-        axis_results=[axis],
-        summary_rationale="Exposure is borderline."
-    )
-    assert study.composite_score == 58.0
-    assert len(study.axis_results) == 1
+    assert study.composite_score == 0.85
+    assert len(study.axis_results) == 2
