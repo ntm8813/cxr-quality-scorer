@@ -1,0 +1,8 @@
+# configs/model_versions.yaml
+models:
+  lung_segmentation:
+    active_version: "v1.0"
+    versions:
+      "v1.0":
+        path: "weights/best_lung_unet.pth"
+        description: "MONAI U-Net trained on CXR lung masks"
