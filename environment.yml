@@ -1,0 +1,30 @@
+name: cxr
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.10
+  - pip
+  - pip:
+    - pydicom
+    - opencv-python
+    - numpy
+    - torch
+    - torchvision
+    - pytorch-lightning
+    - timm
+    - monai
+    - streamlit
+    - mlflow
+    - dvc
+    - dvc[gdrive]
+    - pydantic
+    - reportlab
+    - scipy
+    - pytest
+    - pytest-cov
+    - scikit-learn
+    - matplotlib
+    - pandas
+    - h5py
+    - tqdm
