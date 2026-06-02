@@ -26,3 +26,5 @@ dependencies:
     - scikit-learn
     - matplotlib
     - pandas
+    - h5py
+    - tqdm
