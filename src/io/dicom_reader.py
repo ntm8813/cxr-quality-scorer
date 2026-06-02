@@ -2,7 +2,7 @@ import pydicom
 import numpy as np
 import cv2
 from typing import Dict, Any, Tuple
-from pydicom.pixel_data_handlers.util import apply_voi_lut
+from pydicom.pixels import apply_voi_lut
 
 
 class DICOMReader:

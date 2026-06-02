@@ -1,0 +1,5 @@
+outs:
+- md5: b94ad580650827a6d42847a9c431e59f
+  size: 1628689
+  hash: md5
+  path: best_lung_unet.pth

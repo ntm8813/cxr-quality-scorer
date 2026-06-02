@@ -24,7 +24,7 @@ axis_weights:
   sharpness: 0.20
   exposure: 0.20
   rotation: 0.15
-  coverage: 0.15
+  coverage: 0.15          
   inspiration: 0.10
   artifact: 0.15
   metadata: 0.05
