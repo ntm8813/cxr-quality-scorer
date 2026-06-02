@@ -1,0 +1,26 @@
+version: "1.0"
+project_code: "MTV-INT-RAD-003"
+
+image:
+  resize: 1024
+  interpolation: bilinear
+
+thresholds:
+  laplacian_variance: 80
+  rotation_tolerance_deg: 5
+  coverage_margin_px: 10
+  ei_deviation_min: -1.0
+  ei_deviation_max: 1.0
+
+score_ranges:
+  repeat_max: 40
+  borderline_max: 70
+
+axis_weights:
+  sharpness: 0.20
+  exposure: 0.20
+  rotation: 0.15
+  coverage: 0.15
+  inspiration: 0.10
+  artifact: 0.15
+  metadata: 0.05
