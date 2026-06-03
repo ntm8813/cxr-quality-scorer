@@ -12,6 +12,10 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+    defaults:
+      run:
+        shell: bash -l {0}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -21,57 +25,22 @@ jobs:
         with:
           environment-file: environment.yml
           environment-name: cxr
-          activate-environment: cxr
-          init-shell: bash
           cache-environment: true
 
+      # 🔥 CRITICAL: ensure local imports work
+      - name: Set PYTHONPATH
+        run: echo "PYTHONPATH=$PWD" >> $GITHUB_ENV
+
+      # 🔥 ENSURE CLEAN IMPORT ENV
       - name: Verify environment
-        shell: bash -l {0}
         run: |
           which python
           python --version
-          python -c "import h5py; print('h5py OK')"
           python -c "import numpy; print('numpy OK')"
+          python -c "import torch; print('torch OK')"
+          python -c "import pydicom; print('pydicom OK')"
 
-      - name: Prepare test data directory
-        shell: bash -l {0}
-        run: |
-          mkdir -p data/processed
-
-          python - <<'PY'
-          import h5py
-          import numpy as np
-          import pandas as pd
-
-          with h5py.File("data/processed/cxr_degraded.h5", "w") as f:
-              for i in range(5):
-                  f.create_dataset(
-                      f"sample_{i}",
-                      data=np.random.rand(1024, 1024).astype(np.float32)
-                  )
-
-              f.create_dataset(
-                  "true_degradation_levels",
-                  data=np.linspace(0.0, 1.0, 5)
-              )
-
-              f.create_dataset(
-                  "pipeline_composite_scores",
-                  data=np.linspace(1.0, 0.4, 5)
-              )
-
-          pd.DataFrame({
-              "study_id": [1, 2, 3, 4, 5],
-              "degradation": [0.0, 0.25, 0.5, 0.75, 1.0]
-          }).to_csv(
-              "data/processed/degradation_manifest.csv",
-              index=False
-          )
-
-          print("CI mock assets generated")
-          PY
-
+      # 🔥 RUN TESTS ONLY (NO FAKE DATA GENERATION)
       - name: Run tests
-        shell: bash -l {0}
         run: |
           pytest tests/ -v --tb=short
