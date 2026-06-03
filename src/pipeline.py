@@ -1,6 +1,7 @@
-# src/pipeline.py
 import yaml
-from src.io.dicom_reader import DICOMReader
+import numpy as np
+from PIL import Image
+
 from src.ml.model_registry import ModelRegistry
 from src.scorers.exposure_scorer import ExposureScorer
 from src.scorers.sharpness_scorer import SharpnessScorer
@@ -11,19 +12,43 @@ from src.scorers.inspiration_scorer import InspirationScorer
 from src.fusion.score_fusion import ScoreFusion
 from schemas.study_result import StudyResult
 
-def run_pipeline(dicom_path: str, config_path: str = "configs/v1.yaml") -> StudyResult:
+
+def load_image_any(path: str):
+
+    # PNG / JPG / JPEG support (YOUR DATASET)
+    if path.lower().endswith((".png", ".jpg", ".jpeg")):
+        img = Image.open(path).convert("L")
+        img = img.resize((256, 256))
+        image = np.array(img, dtype=np.float32) / 255.0
+
+        metadata = {
+            "study_uid": path.split("\\")[-1].split("/")[-1],
+            "file_path": path
+        }
+
+        return image, metadata
+
+    # DICOM fallback (optional future support)
+    if path.lower().endswith(".dcm"):
+        from src.io.dicom_reader import DICOMReader
+        return DICOMReader().load(path)
+
+    raise ValueError(f"Unsupported file format: {path}")
+
+
+def run_pipeline(image_path: str, config_path: str = "configs/v1.yaml") -> StudyResult:
+
     with open(config_path, "r") as f:
         config = yaml.safe_load(f)
 
-    # 1. Standardize and load incoming image array
-    reader = DICOMReader()
-    image, metadata = reader.load(dicom_path)
+    # STEP 1: LOAD IMAGE (FIXED)
+    image, metadata = load_image_any(image_path)
 
-    # 2. Initialize model instance via Registry to prevent multiple loading loops
+    # STEP 2: MODEL
     registry = ModelRegistry()
     unet_model = registry.load_lung_segmentation()
 
-    # 3. Orchester scoring execution matrix
+    # STEP 3: SCORERS
     scorers = [
         ExposureScorer(config),
         SharpnessScorer(config),
@@ -33,8 +58,14 @@ def run_pipeline(dicom_path: str, config_path: str = "configs/v1.yaml") -> Study
         InspirationScorer(config, model=unet_model)
     ]
 
-    axis_results = [s.score(image, metadata) for s in scorers]
-    
-    # 4. Fuse scores into final schema payload
+    axis_results = []
+    for s in scorers:
+        try:
+            axis_results.append(s.score(image, metadata))
+        except Exception as e:
+            # prevents single scorer crash from killing pipeline
+            print(f"[SCORER ERROR] {s.__class__.__name__}: {e}")
+
+    # STEP 4: FUSION
     fusion = ScoreFusion(config_path)
     return fusion.fuse(metadata.get("study_uid", "unknown"), axis_results)
