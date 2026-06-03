@@ -27,11 +27,9 @@ jobs:
           environment-name: cxr
           cache-environment: true
 
-      # 🔥 CRITICAL: ensure local imports work
       - name: Set PYTHONPATH
         run: echo "PYTHONPATH=$PWD" >> $GITHUB_ENV
 
-      # 🔥 ENSURE CLEAN IMPORT ENV
       - name: Verify environment
         run: |
           which python
@@ -39,8 +37,49 @@ jobs:
           python -c "import numpy; print('numpy OK')"
           python -c "import torch; print('torch OK')"
           python -c "import pydicom; print('pydicom OK')"
+          python -c "import h5py; print('h5py OK')"
 
-      # 🔥 RUN TESTS ONLY (NO FAKE DATA GENERATION)
+      # 🔥 RESTORED: required dataset for tests
+      - name: Prepare test data
+        run: |
+          mkdir -p data/processed
+
+          python - <<'PY'
+          import os
+          import h5py
+          import numpy as np
+          import pandas as pd
+
+          os.makedirs("data/processed", exist_ok=True)
+
+          with h5py.File("data/processed/cxr_degraded.h5", "w") as f:
+              for i in range(10):
+                  f.create_dataset(
+                      f"sample_{i}",
+                      data=np.random.rand(1024, 1024).astype(np.float32)
+                  )
+
+              f.create_dataset(
+                  "true_degradation_levels",
+                  data=np.linspace(0.0, 1.0, 10)
+              )
+
+              f.create_dataset(
+                  "pipeline_composite_scores",
+                  data=np.linspace(1.0, 0.4, 10)
+              )
+
+          pd.DataFrame({
+              "study_id": list(range(10)),
+              "degradation": np.linspace(0, 1, 10)
+          }).to_csv(
+              "data/processed/degradation_manifest.csv",
+              index=False
+          )
+
+          print("CI mock dataset created")
+          PY
+
       - name: Run tests
         run: |
           pytest tests/ -v --tb=short
