@@ -4,13 +4,11 @@ import numpy as np
 from scipy.stats import spearmanr
 from sklearn.metrics import mean_absolute_error
 
-
 JSON_PATH = Path("evaluation_results.json")
-OUTPUT_PATH = Path("reports/metrics_report.txt")
+OUT_PATH = Path("reports/metrics_report.txt")
 
 
 def extract_arrays(data):
-
     runs = data.get("runs", [])
 
     composite = []
@@ -23,31 +21,31 @@ def extract_arrays(data):
     for r in runs:
         composite.append(r.get("composite_score", 0.0))
 
-        axes = {}
-        for a in r.get("axis_results", []):
-            axes[str(a.get("axis"))] = float(a.get("score", 0.0))
+        axes = {a["axis"].upper(): a["score"] for a in r.get("axis_results", [])}
 
-        exposure.append(axes.get("AxisName.EXPOSURE", 0.0))
-        sharpness.append(axes.get("AxisName.SHARPNESS", 0.0))
-        rotation.append(axes.get("AxisName.ROTATION", 0.0))
-        coverage.append(axes.get("AxisName.COVERAGE", 0.0))
-        inspiration.append(axes.get("AxisName.INSPIRATION", 0.0))
+        exposure.append(axes.get("EXPOSURE", 0.0))
+        sharpness.append(axes.get("SHARPNESS", 0.0))
+        rotation.append(axes.get("ROTATION", 0.0))
+        coverage.append(axes.get("COVERAGE", 0.0))
+        inspiration.append(axes.get("INSPIRATION", 0.0))
 
     return {
-        "composite": np.array(composite),
-        "exposure": np.array(exposure),
-        "sharpness": np.array(sharpness),
-        "rotation": np.array(rotation),
-        "coverage": np.array(coverage),
-        "inspiration": np.array(inspiration),
+        "composite": np.array(composite, dtype=float),
+        "exposure": np.array(exposure, dtype=float),
+        "sharpness": np.array(sharpness, dtype=float),
+        "rotation": np.array(rotation, dtype=float),
+        "coverage": np.array(coverage, dtype=float),
+        "inspiration": np.array(inspiration, dtype=float),
     }
 
 
+def safe_spearman(x, y):
+    if np.std(x) == 0 or np.std(y) == 0:
+        return float("nan")
+    return spearmanr(x, y).correlation
+
+
 def compute_metrics():
-
-    if not JSON_PATH.exists():
-        raise FileNotFoundError("evaluation_results.json not found")
-
     data = json.loads(JSON_PATH.read_text(encoding="utf-8"))
     arr = extract_arrays(data)
 
@@ -59,9 +57,9 @@ def compute_metrics():
             continue
 
         mae = mean_absolute_error(arr["composite"], values)
-        rho, _ = spearmanr(arr["composite"], values)
+        rho = safe_spearman(arr["composite"], values)
 
-        line = f"{name:12s} | MAE={mae:.4f} | Spearman ρ={rho:.4f}"
+        line = f"{name:12s} | MAE={mae:.4f} | Spearman ρ={rho}"
         print(line)
         lines.append(line)
 
@@ -71,12 +69,10 @@ def compute_metrics():
     lines.append(f"Min  : {float(np.min(arr['composite']))}")
     lines.append(f"Max  : {float(np.max(arr['composite']))}")
 
-    output_text = "\n".join(lines)
+    OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    OUT_PATH.write_text("\n".join(lines), encoding="utf-8")
 
-    OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
-    OUTPUT_PATH.write_text(output_text, encoding="utf-8")
-
-    print(f"\nSaved: {OUTPUT_PATH}")
+    print(f"\nSaved: {OUT_PATH}")
 
 
 if __name__ == "__main__":

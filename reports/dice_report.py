@@ -20,14 +20,17 @@ def dice(mask1, mask2, eps=1e-6):
 
 
 def main():
+
     data_dir = r"C:\Users\nirma\Documents\cxr-quality-scorer\data\raw\nih_subset"
+
     files = [
         os.path.join(data_dir, f)
         for f in os.listdir(data_dir)
-        if f.lower().endswith((".png", ".jpg", ".jpeg", ".dcm"))
+        if f.lower().endswith((".png", ".jpg", ".jpeg"))
     ][:100]
 
     reader = DICOMReader()
+
     registry = ModelRegistry()
     model = registry.load_lung_segmentation()
     model.eval()
@@ -35,17 +38,29 @@ def main():
     dice_scores = []
 
     for path in files:
-        img, meta = reader.load(path)
+
+        img, _ = reader.load(path)
         img_t = to_tensor(img)
 
         with torch.no_grad():
+
+            # clean prediction
             pred1 = model(img_t)
-            pred2 = model(img_t + torch.randn_like(img_t) * 0.01)
+
+            # perturbed input (robustness test)
+            noisy_img = img_t + torch.randn_like(img_t) * 0.01
+            noisy_img = torch.clamp(noisy_img, 0.0, 1.0)
+
+            pred2 = model(noisy_img)
 
         pred1 = (pred1 > 0.5).float()
         pred2 = (pred2 > 0.5).float()
 
-        score = dice(pred1.cpu().numpy(), pred2.cpu().numpy())
+        score = dice(
+            pred1.cpu().numpy(),
+            pred2.cpu().numpy()
+        )
+
         dice_scores.append(score)
 
     mean_dice = float(np.mean(dice_scores))
@@ -59,13 +74,16 @@ def main():
     else:
         print("\nRequirement (>0.92): FAIL")
 
-    os.makedirs("reports", exist_ok=True)
-    with open("reports/dice_report.txt", "w", encoding="utf-8") as f:
+    out_path = "reports/dice_report.txt"
+
+    with open(out_path, "w", encoding="utf-8") as f:
         f.write(
-            f"CXR SEGMENTATION ROBUSTNESS REPORT\n\n"
+            "CXR SEGMENTATION ROBUSTNESS REPORT\n\n"
             f"Samples evaluated : {len(dice_scores)}\n"
             f"Mean Dice score   : {mean_dice:.4f}\n"
         )
+
+    print(f"\nSaved: {out_path}")
 
 
 if __name__ == "__main__":

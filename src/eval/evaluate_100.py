@@ -49,41 +49,31 @@ def evaluate_real(data_dir: str, limit=100):
 
         end = time.perf_counter()
         runtime = end - start
-
         runtimes.append(runtime)
 
-        # ================================
-        # FIXED: CLEAN, CONSISTENT SCHEMA
-        # ================================
         results.append({
             "study_uid": study_result.study_uid,
             "composite_score": study_result.composite_score,
             "overall_flag": study_result.overall_flag,
-
             "runtime": runtime,
-
             "axis_results": [
                 {
-                    "axis": str(a.axis),
-                    "score": float(a.score)
+                    "axis": a.axis.name,
+                    "score": a.score
                 }
                 for a in study_result.axis_results
             ],
-
             "path": path
         })
 
         print(f"[{i+1}/{limit}] runtime={runtime:.4f}s score={study_result.composite_score}")
 
-    if len(results) == 0:
-        raise RuntimeError("NO VALID RUNS — pipeline failed completely")
+    if not runtimes:
+        print("NO VALID RUNS")
+        return
 
     avg = float(np.mean(runtimes))
     p95 = float(np.percentile(runtimes, 95))
-
-    print("\n=== FINAL RUNTIME REPORT ===")
-    print(f"Average runtime : {avg:.4f} sec")
-    print(f"P95 runtime     : {p95:.4f} sec")
 
     output = {
         "dataset_path": str(data_dir),
@@ -93,16 +83,16 @@ def evaluate_real(data_dir: str, limit=100):
         "runs": results
     }
 
-    output_path = Path("evaluation_results.json")
-
-    with open(output_path, "w", encoding="utf-8") as f:
+    with open("evaluation_results.json", "w", encoding="utf-8") as f:
         json.dump(output, f, indent=2)
 
-    print(f"Saved: {output_path}")
+    print("\n=== FINAL RUNTIME REPORT ===")
+    print(f"Average runtime : {avg:.4f} sec")
+    print(f"P95 runtime     : {p95:.4f} sec")
+    print("Saved: evaluation_results.json")
 
 
 if __name__ == "__main__":
 
     DATA_DIR = r"C:\Users\nirma\Documents\cxr-quality-scorer\data\raw\nih_subset"
-
     evaluate_real(DATA_DIR, 100)
