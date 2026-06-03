@@ -37,16 +37,38 @@ jobs:
         shell: bash -l {0}
         run: |
           mkdir -p data/processed
+
           python - <<'PY'
           import h5py
           import numpy as np
+          import pandas as pd
 
           with h5py.File("data/processed/cxr_degraded.h5", "w") as f:
+              for i in range(5):
+                  f.create_dataset(
+                      f"sample_{i}",
+                      data=np.random.rand(1024, 1024).astype(np.float32)
+                  )
+
               f.create_dataset(
-                  "image",
-                  data=np.zeros((1, 1024, 1024), dtype=np.float32)
+                  "true_degradation_levels",
+                  data=np.linspace(0.0, 1.0, 5)
               )
-          print("Dummy HDF5 created")
+
+              f.create_dataset(
+                  "pipeline_composite_scores",
+                  data=np.linspace(1.0, 0.4, 5)
+              )
+
+          pd.DataFrame({
+              "study_id": [1, 2, 3, 4, 5],
+              "degradation": [0.0, 0.25, 0.5, 0.75, 1.0]
+          }).to_csv(
+              "data/processed/degradation_manifest.csv",
+              index=False
+          )
+
+          print("CI mock assets generated")
           PY
 
       - name: Run tests
