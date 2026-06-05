@@ -1,0 +1,54 @@
+
+Loading scorers...
+
+Manifest summary (axis × severity workload)
+axis      severity
+blur      1           1500
+          2           1500
+exposure  1           1500
+          2           1500
+noise     1           1500
+          2           1500
+none      0           1500
+rotation  1           1500
+          2           1500
+dtype: int64
+
+======================================================================
+Evaluating EXPOSURE (stable pairwise)
+======================================================================
+
+RESULTS: exposure
+  Accuracy (monotonic ordering): 0.9553
+  Collapsed pairs: 67/1500 (4.47%)
+  STATUS: PASS
+
+======================================================================
+Evaluating BLUR (stable pairwise)
+======================================================================
+
+RESULTS: blur
+  Accuracy (monotonic ordering): 1.0000
+  Collapsed pairs: 0/1500 (0.00%)
+  STATUS: PASS
+
+coverage: no rows in manifest.
+
+inspiration: no rows in manifest.
+
+======================================================================
+Evaluating ROTATION (ground truth)
+======================================================================
+
+ROTATION RESULTS
+  Accuracy: 1.0000
+  STATUS: PASS
+
+======================================================================
+FINAL SUMMARY
+======================================================================
+exposure       PASS  score=0.9553
+blur           PASS  score=1.0000
+coverage       N/A
+inspiration    N/A
+rotation       PASS  score=1.0000
