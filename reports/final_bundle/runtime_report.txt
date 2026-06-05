@@ -1,9 +1,0 @@
-CXR PIPELINE RUNTIME REPORT
-
-Samples evaluated : 100
-Average runtime   : 0.1351 sec
-P95 runtime       : 0.1701 sec
-Min runtime       : 0.0958 sec
-Max runtime       : 0.2263 sec
-
-Requirement (<2s) : PASS

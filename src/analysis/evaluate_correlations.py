@@ -1,12 +1,10 @@
 """
-evaluate_correlations.py — stable per-axis evaluation (no Spearman instability)
+evaluate_correlations.py — stable pairwise evaluation for the current Week 2 manifest.
 
-Fixes:
-- Removes ConstantInputWarning entirely
-- Removes SciPy Spearman (pairwise case does not need it)
-- Adds deterministic ordinal evaluation
-- Adds progress visibility per axis
-- Adds collapsed-signal diagnostics
+Notes:
+- Only evaluates axes present in the manifest.
+- Skips missing axes cleanly.
+- Rotation uses stored applied_angle_deg.
 """
 
 import h5py
@@ -17,6 +15,7 @@ from tqdm import tqdm
 
 from src.scorers.exposure_scorer import ExposureScorer
 from src.scorers.sharpness_scorer import SharpnessScorer
+from src.scorers.rotation_scorer import RotationScorer
 from src.scorers.coverage_scorer import CoverageScorer
 from src.scorers.inspiration_scorer import InspirationScorer
 
@@ -26,16 +25,7 @@ CONFIG_PATH = "configs/v1.yaml"
 TARGET_RHO = 0.75
 
 
-# ------------------------------------------------------------
-# Core comparison metric (replaces Spearman safely)
-# ------------------------------------------------------------
 def pairwise_directional_score(bad1: float, bad2: float) -> int:
-    """
-    Returns:
-        +1 if severity ordering is correct (2 > 1)
-        -1 if reversed
-         0 if no signal (collapsed)
-    """
     if abs(bad1 - bad2) < 1e-8:
         return 0
     return 1 if bad2 > bad1 else -1
@@ -65,7 +55,6 @@ def evaluate_scorer_axis(axis_name, scorer, manifest, h5):
             continue
 
         uid1, uid2 = s1.iloc[0]["uid"], s2.iloc[0]["uid"]
-
         if uid1 not in h5 or uid2 not in h5:
             continue
 
@@ -84,19 +73,21 @@ def evaluate_scorer_axis(axis_name, scorer, manifest, h5):
                 correct += 1
 
             total += 1
-
         except Exception as exc:
             tqdm.write(f"Skipping {base_uid}: {exc}")
 
-    rho = correct / total if total > 0 else 0.0
-    collapse_rate = collapsed / total if total > 0 else 0.0
+    score = correct / total if total > 0 else None
+    collapse_rate = collapsed / total if total > 0 else None
 
     print(f"\nRESULTS: {axis_name}")
-    print(f"  Accuracy (monotonic ordering): {rho:.4f}")
-    print(f"  Collapsed pairs: {collapsed}/{total} ({collapse_rate:.2%})")
-    print(f"  STATUS: {'PASS' if rho >= TARGET_RHO else 'FAIL'}")
+    if score is None:
+        print("  No valid pairs.")
+    else:
+        print(f"  Accuracy (monotonic ordering): {score:.4f}")
+        print(f"  Collapsed pairs: {collapsed}/{total} ({collapse_rate:.2%})")
+        print(f"  STATUS: {'PASS' if score >= TARGET_RHO else 'FAIL'}")
 
-    return rho
+    return score
 
 
 def evaluate_rotation_ground_truth(manifest, h5):
@@ -120,7 +111,6 @@ def evaluate_rotation_ground_truth(manifest, h5):
             continue
 
         uid1, uid2 = s1.iloc[0]["uid"], s2.iloc[0]["uid"]
-
         if uid1 not in h5 or uid2 not in h5:
             continue
 
@@ -129,20 +119,22 @@ def evaluate_rotation_ground_truth(manifest, h5):
 
         if ang2 > ang1:
             correct += 1
-
         total += 1
 
-    rho = correct / total if total > 0 else 0.0
+    score = correct / total if total > 0 else None
 
     print(f"\nROTATION RESULTS")
-    print(f"  Accuracy: {rho:.4f}")
-    print(f"  STATUS: {'PASS' if rho >= TARGET_RHO else 'FAIL'}")
+    if score is None:
+        print("  No valid pairs.")
+    else:
+        print(f"  Accuracy: {score:.4f}")
+        print(f"  STATUS: {'PASS' if score >= TARGET_RHO else 'FAIL'}")
 
-    return rho
+    return score
 
 
 def main():
-    with open(CONFIG_PATH) as f:
+    with open(CONFIG_PATH, "r", encoding="utf-8") as f:
         config = yaml.safe_load(f)
 
     print("\nLoading scorers...")
@@ -155,16 +147,13 @@ def main():
     }
 
     manifest = pd.read_csv(MANIFEST_PATH)
-
     print("\nManifest summary (axis × severity workload)")
     print(manifest.groupby(["axis", "severity"]).size())
 
     results = {}
-
     with h5py.File(H5_PATH, "r") as h5:
         for axis_name, scorer in scorers.items():
             results[axis_name] = evaluate_scorer_axis(axis_name, scorer, manifest, h5)
-
         results["rotation"] = evaluate_rotation_ground_truth(manifest, h5)
 
     print("\n" + "=" * 70)
@@ -172,8 +161,12 @@ def main():
     print("=" * 70)
 
     for axis, score in results.items():
-        status = "PASS" if score is not None and score >= TARGET_RHO else "FAIL"
-        print(f"{axis:<14} {status}  score={score:.4f}")
+        if score is None:
+            print(f"{axis:<14} N/A")
+        elif score >= TARGET_RHO:
+            print(f"{axis:<14} PASS  score={score:.4f}")
+        else:
+            print(f"{axis:<14} FAIL  score={score:.4f}")
 
     return results
 

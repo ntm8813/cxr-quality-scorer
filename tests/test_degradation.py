@@ -29,7 +29,8 @@ def test_dataset_integrity():
     assert "severity" in df.columns, "Manifest missing 'severity' column"
 
     # Validate expected generation ratio:
-    # 1 clean image : 8 degraded variants
+    # 1 clean image : 12 degraded variants (6 axes × 2 severity levels)
+
     clean_count = len(df[df["severity"] == 0])
     degraded_count = len(df[df["severity"] != 0])
 
