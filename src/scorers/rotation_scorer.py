@@ -1,53 +1,57 @@
-import cv2
+from __future__ import annotations
+
 import numpy as np
 
+from schemas.axis_result import AxisName, AxisResult
 from src.scorers.base import BaseScorer
-from schemas.axis_result import AxisResult, AxisName
+from src.scorers.quality_utils import (
+    anatomical_foreground_mask,
+    as_float_image,
+    crop_to_mask,
+    weighted_orientation_deg,
+)
 
 
 class RotationScorer(BaseScorer):
     """
-    Estimates image rotation using second-order image moments.
-    A perfectly vertical anatomical structure corresponds to 0° rotation error.
+    Rotation scorer based on ROI-restricted dominant-axis orientation.
+    Returns a signed angle in degrees for pairwise comparisons.
     """
 
+    def _estimate_orientation(self, image: np.ndarray):
+        img = as_float_image(image)
+        body_mask = anatomical_foreground_mask(img)
+        crop_img, crop_mask = crop_to_mask(img, body_mask, pad_ratio=0.08)
+
+        if crop_img.size == 0:
+            return 0.0, 0.0, 0
+
+        signed_angle_deg, confidence, fg_count = weighted_orientation_deg(crop_img)
+
+        if fg_count <= 0:
+            return 0.0, 0.0, 0
+
+        return float(signed_angle_deg), float(confidence), int(fg_count)
+
     def score(self, image: np.ndarray, metadata: dict) -> AxisResult:
+        tolerance = float(self.config.get("thresholds", {}).get("rotation_tolerance_deg", 5.0))
 
-        tolerance = self.config["thresholds"]["rotation_tolerance_deg"]
+        signed_angle_deg, confidence, fg_count = self._estimate_orientation(image)
 
-        img_uint8 = (image * 255).astype(np.uint8)
+        if fg_count <= 0:
+            signed_angle_deg = 0.0
+            confidence = 0.0
 
-        _, binary = cv2.threshold(
-            img_uint8,
-            30,
-            255,
-            cv2.THRESH_BINARY
-        )
+        angle_error_deg = float(90.0 - abs(float(signed_angle_deg)))
+        angle_error_deg = max(0.0, angle_error_deg)
 
-        moments = cv2.moments(binary)
-
-        if moments["m00"] == 0:
-            angle_error = 90.0
-
-        elif moments["mu20"] == moments["mu02"]:
-            angle_error = 0.0
-
-        else:
-            raw_angle = 0.5 * np.degrees(
-                np.arctan2(
-                    2 * moments["mu11"],
-                    moments["mu20"] - moments["mu02"]
-                )
-            )
-
-            # Convert orientation into deviation from vertical.
-            angle_error = abs(90.0 - abs(raw_angle))
-
+        denom = max(1.0, tolerance * 1.35)
+        confidence_boost = 0.55 + 0.45 * float(np.clip(confidence, 0.0, 1.0))
         raw_score = float(
             np.clip(
-                1.0 - (angle_error / (tolerance * 3)),
+                np.exp(-((angle_error_deg / denom) ** 1.15)) * confidence_boost,
                 0.0,
-                1.0
+                1.0,
             )
         )
 
@@ -57,12 +61,14 @@ class RotationScorer(BaseScorer):
             score=raw_score,
             flag=self._flag_from_score(raw_score),
             raw_metrics={
-                "rotation_angle_deg": round(float(angle_error), 2),
-                "tolerance_deg": tolerance
+                "rotation_angle_deg": round(float(angle_error_deg), 2),
+                "rotation_angle_deg_signed": round(float(signed_angle_deg), 2),
+                "orientation_confidence": round(float(confidence), 4),
+                "foreground_pixel_count": int(fg_count),
+                "tolerance_deg": float(tolerance),
             },
             rationale=(
-                f"Estimated rotation error "
-                f"{angle_error:.1f}°. "
-                f"Tolerance ±{tolerance}°."
-            )
+                f"Signed orientation={signed_angle_deg:.2f}°, "
+                f"deviation={angle_error_deg:.2f}°, confidence={confidence:.3f}."
+            ),
         )

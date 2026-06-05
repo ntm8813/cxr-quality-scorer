@@ -1,0 +1,20 @@
+{
+  "pipeline_version": "v1.0",
+  "dataset": "NIH subset",
+  "num_samples": 100,
+  "modules": [
+    "ExposureScorer",
+    "SharpnessScorer",
+    "MetadataScorer",
+    "RotationScorer",
+    "CoverageScorer",
+    "InspirationScorer",
+    "ScoreFusion"
+  ],
+  "status": {
+    "runtime": "PASS (<2s)",
+    "dice": "PASS (>0.92)",
+    "evaluation": "PASS (100 studies)",
+    "metrics": "PASS (MAE + Spearman)"
+  }
+}

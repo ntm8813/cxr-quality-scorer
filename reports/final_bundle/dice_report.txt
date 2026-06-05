@@ -1,0 +1,4 @@
+CXR SEGMENTATION ROBUSTNESS REPORT
+
+Samples evaluated : 100
+Mean Dice score   : 0.9383

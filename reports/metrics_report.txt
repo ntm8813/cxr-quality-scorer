@@ -1,0 +1,12 @@
+=== MAE REPORT (vs composite_score) ===
+exposure     | MAE=0.1829 | Spearman ρ=0.23699441042534036
+sharpness    | MAE=0.1904 | Spearman ρ=0.5985586450833184
+rotation     | MAE=0.6109 | Spearman ρ=0.2673190996770027
+coverage     | MAE=0.2834 | Spearman ρ=0.476829028784129
+inspiration  | MAE=0.3096 | Spearman ρ=0.2994271636622342
+
+=== GLOBAL COMPOSITE DISTRIBUTION ===
+Mean : 0.6660059999999999
+Std  : 0.07964151156275226
+Min  : 0.4753
+Max  : 0.8997

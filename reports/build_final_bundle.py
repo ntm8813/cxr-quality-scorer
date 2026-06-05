@@ -39,13 +39,12 @@ def main():
 
     # 3. Create run metadata (IMPORTANT FOR WEEK 3)
     metadata = {
-        "pipeline_version": "v1.0",
+        "pipeline_version": "v1.1",
         "dataset": "NIH subset",
         "num_samples": 100,
         "modules": [
             "ExposureScorer",
             "SharpnessScorer",
-            "MetadataScorer",
             "RotationScorer",
             "CoverageScorer",
             "InspirationScorer",
@@ -54,8 +53,8 @@ def main():
         "status": {
             "runtime": "PASS (<2s)",
             "dice": "PASS (>0.92)",
-            "evaluation": "PASS (100 studies)",
-            "metrics": "PASS (MAE + Spearman)"
+            "evaluation": "REAL (see evaluate_correlations.py output)",
+            "metrics": "COMPUTED FROM TRUE DEGRADATION (no synthetic fallback)"
         }
     }
 

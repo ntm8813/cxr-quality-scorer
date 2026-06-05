@@ -7,11 +7,18 @@ image:
 
 thresholds:
   inspiration_min_ratio: 0.18
+  # Expected lung area ratio for a fully-inflated CXR.
+  # InspirationScorer maps lung_ratio / inspiration_target_ratio → score.
+  # Setting to 2.5× the minimum gives continuous signal across the full
+  # severity range without saturating at 1.0 for healthy images.
+  inspiration_target_ratio: 0.45
+
   laplacian_variance: 80
   laplacian_variance_borderline: 50
   rotation_tolerance_deg: 3
   rotation_borderline_deg: 5
   coverage_margin_px: 10
+  coverage_margin_min_px: 10   # alias accepted by CoverageScorer
   ei_deviation_min: -1.0
   ei_deviation_max: 1.0
   ei_deviation_borderline_min: -2.0
@@ -25,7 +32,7 @@ axis_weights:
   sharpness: 0.20
   exposure: 0.20
   rotation: 0.15
-  coverage: 0.15          
+  coverage: 0.15
   inspiration: 0.10
   artifact: 0.15
   metadata: 0.05

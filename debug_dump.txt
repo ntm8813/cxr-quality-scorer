@@ -1,0 +1,330 @@
+import h5py
+import yaml
+import pandas as pd
+import numpy as np
+from scipy.stats import spearmanr
+
+from src.scorers.exposure_scorer import ExposureScorer
+from src.scorers.sharpness_scorer import SharpnessScorer
+from src.scorers.rotation_scorer import RotationScorer
+
+H5_PATH = "data/processed/cxr_degraded.h5"
+MANIFEST_PATH = "data/processed/degradation_manifest.csv"
+CONFIG_PATH = "configs/v1.yaml"
+
+
+def circular_distance_deg(a: float, b: float, period: float = 180.0) -> float:
+    """
+    Smallest absolute angular difference on a circular domain.
+    For orientation-style measurements, 180 degrees periodicity is appropriate.
+    """
+    diff = (a - b + period / 2.0) % period - period / 2.0
+    return abs(float(diff))
+
+
+def patient_pair_rho(badness_1: float, badness_2: float) -> float:
+    """
+    Spearman rho for a single patient pair:
+    severity [1, 2] vs badness [b1, b2].
+
+    With only two points, rho is effectively:
+    - +1 when badness increases with severity
+    - -1 when it decreases
+    - 0 when tied / undefined
+    """
+    rho = spearmanr([1, 2], [badness_1, badness_2]).correlation
+    if rho is None or np.isnan(rho):
+        return 0.0
+    return float(rho)
+
+
+def evaluate_axis(axis_name, scorer, manifest, h5):
+    rows = manifest[manifest["axis"] == axis_name]
+    if len(rows) == 0:
+        print(f"\n{axis_name}: no rows found")
+        return
+
+    patient_rhos = []
+    correct_pairs = 0
+    total_pairs = 0
+
+    print("\n" + "=" * 70)
+    print(f"Evaluating {axis_name.upper()}")
+    print("=" * 70)
+
+    for base_uid, group in rows.groupby("base_uid"):
+        sev1 = group[group["severity"] == 1]
+        sev2 = group[group["severity"] == 2]
+
+        if len(sev1) == 0 or len(sev2) == 0:
+            continue
+
+        uid1 = sev1.iloc[0]["uid"]
+        uid2 = sev2.iloc[0]["uid"]
+        uid0 = f"{base_uid}_clean_0"
+
+        if uid0 not in h5 or uid1 not in h5 or uid2 not in h5:
+            continue
+
+        try:
+            if axis_name == "rotation":
+                clean_angle = scorer.score(
+                    h5[uid0][:],
+                    {"study_uid": uid0}
+                ).raw_metrics["rotation_angle_deg_signed"]
+
+                angle1 = scorer.score(
+                    h5[uid1][:],
+                    {"study_uid": uid1}
+                ).raw_metrics["rotation_angle_deg_signed"]
+
+                angle2 = scorer.score(
+                    h5[uid2][:],
+                    {"study_uid": uid2}
+                ).raw_metrics["rotation_angle_deg_signed"]
+
+                badness1 = circular_distance_deg(angle1, clean_angle, period=180.0)
+                badness2 = circular_distance_deg(angle2, clean_angle, period=180.0)
+
+            elif axis_name == "blur":
+                score1 = scorer.score(
+                    h5[uid1][:],
+                    {"study_uid": uid1}
+                ).score
+
+                score2 = scorer.score(
+                    h5[uid2][:],
+                    {"study_uid": uid2}
+                ).score
+
+                # Higher badness = worse quality
+                badness1 = 1.0 - float(score1)
+                badness2 = 1.0 - float(score2)
+
+            else:  # exposure
+                score1 = scorer.score(
+                    h5[uid1][:],
+                    {"study_uid": uid1}
+                ).score
+
+                score2 = scorer.score(
+                    h5[uid2][:],
+                    {"study_uid": uid2}
+                ).score
+
+                # Higher badness = worse quality
+                badness1 = 1.0 - float(score1)
+                badness2 = 1.0 - float(score2)
+
+            rho = patient_pair_rho(badness1, badness2)
+            patient_rhos.append(rho)
+
+            total_pairs += 1
+            if badness2 > badness1:
+                correct_pairs += 1
+
+        except Exception:
+            continue
+
+    if total_pairs == 0:
+        print("No valid pairs")
+        return
+
+    mean_rho = float(np.mean(patient_rhos))
+    median_rho = float(np.median(patient_rhos))
+    pairwise_accuracy = correct_pairs / total_pairs
+
+    print(f"Patient-level mean rho : {mean_rho:.4f}")
+    print(f"Patient-level median rho: {median_rho:.4f}")
+    print(f"Pairwise accuracy      : {pairwise_accuracy:.4f}")
+    print(f"N pairs                : {total_pairs}")
+
+    if mean_rho >= 0.75:
+        print("STATUS                 : PASS")
+    else:
+        print("STATUS                 : FAIL")
+
+
+def main():
+    with open(CONFIG_PATH, "r") as f:
+        config = yaml.safe_load(f)
+
+    scorers = {
+        "exposure": ExposureScorer(config),
+        "blur": SharpnessScorer(config),
+        "rotation": RotationScorer(config),
+    }
+
+    manifest = pd.read_csv(MANIFEST_PATH)
+
+    print("\nManifest summary")
+    print(manifest.groupby(["axis", "severity"]).size())
+
+    with h5py.File(H5_PATH, "r") as h5:
+        evaluate_axis("exposure", scorers["exposure"], manifest, h5)
+        evaluate_axis("blur", scorers["blur"], manifest, h5)
+        evaluate_axis("rotation", scorers["rotation"], manifest, h5)
+
+    print("\nFinished.")
+
+
+if __name__ == "__main__":
+    main()
+================================================================
+SHARPNESS SCORER
+================================================================
+import cv2
+import numpy as np
+from src.scorers.base import BaseScorer
+from schemas.axis_result import AxisResult, AxisName
+
+class SharpnessScorer(BaseScorer):
+    """Computes high-frequency spatial edge details using Laplacian and Sobel variance matrices[cite: 17, 18]."""
+
+    def score(self, image: np.ndarray, metadata: dict) -> AxisResult:
+        # Convert matrix back to uint8 for OpenCV operations 
+        img_uint8 = (image * 255).astype(np.uint8) 
+
+        # Laplacian variance calculation 
+        laplacian = cv2.Laplacian(img_uint8, cv2.CV_64F)
+        lap_var = float(laplacian.var()) 
+
+        # Tenengrad matrix gradient magnitude [cite: 18]
+        gx = cv2.Sobel(img_uint8, cv2.CV_64F, 1, 0, ksize=3)
+        gy = cv2.Sobel(img_uint8, cv2.CV_64F, 0, 1, ksize=3)
+        tenengrad = float(np.mean(gx**2 + gy**2)) 
+
+        # Extraction from config file [cite: 18]
+        threshold = self.config["thresholds"]["laplacian_variance"] 
+
+        # Linear normalization mapping around threshold [cite: 18]
+        ratio = lap_var / threshold 
+        raw_score = float(np.clip(ratio / 2.0, 0.0, 1.0))
+
+        return AxisResult(
+            study_uid=metadata.get("study_uid", "unknown"), 
+            axis=AxisName.SHARPNESS, 
+            score=raw_score, 
+            flag=self._flag_from_score(raw_score), 
+            raw_metrics={
+                "laplacian_variance": lap_var, 
+                "tenengrad": tenengrad, 
+                "threshold": threshold 
+            },
+            rationale=f"Laplacian variance {lap_var:.1f} vs threshold {threshold}." 
+        )
+================================================================
+EXPOSURE SCORER
+================================================================
+import numpy as np
+from src.scorers.base import BaseScorer
+from schemas.axis_result import AxisResult, AxisName, QualityFlag
+
+class ExposureScorer(BaseScorer):
+    """Evaluates global histogram statistics and DICOM Deviation Index (DI) flags[cite: 5, 6]."""
+
+    def score(self, image: np.ndarray, metadata: dict) -> AxisResult:
+        # 1. Histogram statistics [cite: 5]
+        mean_pixel = float(np.mean(image)) 
+        p5 = float(np.percentile(image, 5))
+        p95 = float(np.percentile(image, 95)) 
+        clipping_ratio = float(np.mean(image > 0.95) + np.mean(image < 0.05)) 
+
+        # 2. DICOM deviation index check [cite: 5]
+        di = metadata.get("deviation_index") 
+        di_ok = True 
+        if di is not None: 
+            di = float(di) 
+            di_ok = -1.0 <= di <= 1.0 
+
+        # 3. Score computation [cite: 6]
+        mean_penalty = abs(mean_pixel - 0.5) * 2  # 0 = perfect, 1 = worst [cite: 6, 7]
+        clip_penalty = min(clipping_ratio * 5, 1.0) 
+        di_penalty = 0.0 if di_ok else 0.3 
+
+        raw_score = 1.0 - (0.4 * mean_penalty + 0.4 * clip_penalty + 0.2 * di_penalty) 
+        raw_score = float(np.clip(raw_score, 0.0, 1.0)) 
+
+        return AxisResult(
+            study_uid=metadata.get("study_uid", "unknown"),
+            axis=AxisName.EXPOSURE, 
+            score=raw_score, 
+            flag=self._flag_from_score(raw_score), 
+            raw_metrics={
+                "mean_pixel": mean_pixel, 
+                "p5": p5, 
+                "p95": p95, 
+                "clipping_ratio": clipping_ratio, 
+                "deviation_index": di, 
+                "di_within_bounds": di_ok 
+            },
+            rationale=f"Mean pixel intensity {mean_pixel:.2f}, clipping ratio {clipping_ratio:.3f}." 
+        )
+================================================================
+AXIS RESULT SCHEMA
+================================================================
+# schemas/axis_result.py
+from enum import Enum
+from pydantic import BaseModel, Field
+from typing import Dict, Any, Optional
+
+class AxisName(str, Enum):
+    EXPOSURE = "exposure"
+    SHARPNESS = "sharpness"
+    METADATA = "metadata"
+    ROTATION = "rotation"
+    COVERAGE = "coverage"
+    INSPIRATION = "inspiration"
+    ARTIFACT = "artifact"
+
+class QualityFlag(str, Enum):
+    ACCEPTABLE = "acceptable"
+    BORDERLINE = "borderline"
+    REPEAT = "repeat"
+
+class AxisResult(BaseModel):
+    """
+    Standardised assessment schema for a single quality axis evaluation.
+    """
+    study_uid: str
+    axis: AxisName
+    score: float = Field(..., ge=0.0, le=1.0, description="Normalized score from 0.0 (worst) to 1.0 (best)")
+    flag: QualityFlag = Field(..., description="Status flag: acceptable, borderline, or repeat")
+    raw_metrics: Dict[str, Any] = Field(default_factory=dict, description="Raw dictionary measurements for debugging")
+    rationale: Optional[str] = Field(None, description="Human-readable text string describing the system's reasoning")
+================================================================
+MANIFEST SAMPLE
+================================================================
+                                                uid                              base_uid      axis  severity
+0      002e817b-a39b-49c2-a10d-807fc4c9ac18_clean_0  002e817b-a39b-49c2-a10d-807fc4c9ac18      none         0
+1       002e817b-a39b-49c2-a10d-807fc4c9ac18_blur_1  002e817b-a39b-49c2-a10d-807fc4c9ac18      blur         1
+2       002e817b-a39b-49c2-a10d-807fc4c9ac18_blur_2  002e817b-a39b-49c2-a10d-807fc4c9ac18      blur         2
+3      002e817b-a39b-49c2-a10d-807fc4c9ac18_noise_1  002e817b-a39b-49c2-a10d-807fc4c9ac18     noise         1
+4      002e817b-a39b-49c2-a10d-807fc4c9ac18_noise_2  002e817b-a39b-49c2-a10d-807fc4c9ac18     noise         2
+5   002e817b-a39b-49c2-a10d-807fc4c9ac18_exposure_1  002e817b-a39b-49c2-a10d-807fc4c9ac18  exposure         1
+6   002e817b-a39b-49c2-a10d-807fc4c9ac18_exposure_2  002e817b-a39b-49c2-a10d-807fc4c9ac18  exposure         2
+7   002e817b-a39b-49c2-a10d-807fc4c9ac18_rotation_1  002e817b-a39b-49c2-a10d-807fc4c9ac18  rotation         1
+8   002e817b-a39b-49c2-a10d-807fc4c9ac18_rotation_2  002e817b-a39b-49c2-a10d-807fc4c9ac18  rotation         2
+9      008d3a6a-5371-425d-b2b5-00731295d85f_clean_0  008d3a6a-5371-425d-b2b5-00731295d85f      none         0
+10      008d3a6a-5371-425d-b2b5-00731295d85f_blur_1  008d3a6a-5371-425d-b2b5-00731295d85f      blur         1
+11      008d3a6a-5371-425d-b2b5-00731295d85f_blur_2  008d3a6a-5371-425d-b2b5-00731295d85f      blur         2
+12     008d3a6a-5371-425d-b2b5-00731295d85f_noise_1  008d3a6a-5371-425d-b2b5-00731295d85f     noise         1
+13     008d3a6a-5371-425d-b2b5-00731295d85f_noise_2  008d3a6a-5371-425d-b2b5-00731295d85f     noise         2
+14  008d3a6a-5371-425d-b2b5-00731295d85f_exposure_1  008d3a6a-5371-425d-b2b5-00731295d85f  exposure         1
+15  008d3a6a-5371-425d-b2b5-00731295d85f_exposure_2  008d3a6a-5371-425d-b2b5-00731295d85f  exposure         2
+16  008d3a6a-5371-425d-b2b5-00731295d85f_rotation_1  008d3a6a-5371-425d-b2b5-00731295d85f  rotation         1
+17  008d3a6a-5371-425d-b2b5-00731295d85f_rotation_2  008d3a6a-5371-425d-b2b5-00731295d85f  rotation         2
+18     0091ce16-8cbc-48bb-bf33-f84a05ee0d77_clean_0  0091ce16-8cbc-48bb-bf33-f84a05ee0d77      none         0
+19      0091ce16-8cbc-48bb-bf33-f84a05ee0d77_blur_1  0091ce16-8cbc-48bb-bf33-f84a05ee0d77      blur         1
+
+================================================================
+SHARPNESS TEST
+================================================================
+0.008823350187572031
+{'laplacian_variance': 1.4117360300115251, 'tenengrad': 159.79520416259766, 'threshold': 80}
+
+================================================================
+EXPOSURE TEST
+================================================================
+0.6925745248794556
+{'mean_pixel': 0.43981483578681946, 'p5': 0.0, 'p95': 0.8836680054664612, 'clipping_ratio': 0.129638671875, 'deviation_index': None, 'di_within_bounds': True}
