@@ -1,0 +1,14 @@
+{
+  "best_rho_quality": 0.3125,
+  "best_weights": {
+    "sharpness": 0.2105,
+    "exposure": 0.1579,
+    "rotation": 0.1579,
+    "coverage": 0.1579,
+    "inspiration": 0.1053,
+    "artifact": 0.1579,
+    "metadata": 0.0526
+  },
+  "n_images_scored": 400,
+  "note": "If best_rho_quality > current, copy best_weights into configs/v1.yaml axis_weights section."
+}

@@ -1,8 +1,21 @@
-# configs/model_versions.yaml
 models:
   lung_segmentation:
     active_version: "v1.0"
     versions:
       "v1.0":
         path: "weights/best_lung_unet.pth"
-        description: "MONAI U-Net trained on CXR lung masks"
+        description: "MONAI U-Net trained on NIH Chest X-ray dataset, Dice=0.9581"
+
+  blur_classifier:
+    active_version: "v1.0"
+    versions:
+      "v1.0":
+        path: "weights/best_blur_classifier.pth"
+        description: "EfficientNet-B0 motion blur classifier trained on synthetic NIH CXR blur augmentation dataset, validation AUC=1.000"
+
+  artifact_classifier:
+    active_version: "v1.0"
+    versions:
+      "v1.0":
+        path: "weights/best_artifact_classifier.pth"
+        description: "EfficientNet-B0 artifact classifier trained on synthetic NIH CXR artifact augmentation dataset, validation AUC=1.000"

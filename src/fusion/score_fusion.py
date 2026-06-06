@@ -1,57 +1,82 @@
+# src/fusion/score_fusion.py
+
+from __future__ import annotations
+
+from typing import List, Dict
+from collections import defaultdict
 import yaml
-from typing import List
 
 from schemas.axis_result import AxisResult
 from schemas.study_result import StudyResult
 
 
 class ScoreFusion:
-    """Aggregates per-axis results using configured weights (robust + case-safe)."""
+    """
+    FIXED VERSION:
+    - Supports multiple scorers per axis
+    - No silent overwrites
+    - Proper aggregation (mean score per axis)
+    - Preserves full traceability
+    """
 
     def __init__(self, config_path: str = "configs/v1.yaml"):
         with open(config_path, "r") as f:
             self.config = yaml.safe_load(f)
 
-        # Normalize config keys to uppercase for safe matching
         self.weights = {
             k.upper(): float(v)
             for k, v in self.config["axis_weights"].items()
         }
 
-    def fuse(
-        self,
-        study_uid: str,
-        axis_results: List[AxisResult]
-    ) -> StudyResult:
+    def _group_by_axis(self, axis_results: List[AxisResult]):
+        grouped = defaultdict(list)
 
-        # Normalize AxisResult keys to uppercase (enum-safe)
-        results_by_axis = {
-            r.axis.name.upper(): r for r in axis_results
-        }
+        for r in axis_results:
+            axis = r.axis.name.upper()
+            grouped[axis].append(r)
+
+        return grouped
+
+    def _aggregate_axis(self, results: List[AxisResult]) -> float:
+        """
+        Default aggregation strategy: simple mean.
+        (Later we can upgrade to learned weights)
+        """
+        return sum(r.score for r in results) / len(results)
+
+    def fuse(self, study_uid: str, axis_results: List[AxisResult]) -> StudyResult:
+
+        grouped = self._group_by_axis(axis_results)
 
         weighted_score = 0.0
         total_weight = 0.0
-
         missing_axes = []
+
+        axis_summary = {}
 
         for axis_name, weight in self.weights.items():
 
-            if axis_name in results_by_axis:
-                weighted_score += results_by_axis[axis_name].score * weight
+            if axis_name in grouped:
+
+                aggregated_score = self._aggregate_axis(grouped[axis_name])
+
+                weighted_score += aggregated_score * weight
                 total_weight += weight
+
+                axis_summary[axis_name] = {
+                    "score": aggregated_score,
+                    "n_models": len(grouped[axis_name]),
+                }
+
             else:
                 missing_axes.append(axis_name)
 
-        # HARD FAIL if nothing matched (prevents silent garbage outputs)
         if total_weight == 0:
             raise ValueError(
-                f"Fusion failed: no matching axes found. Missing in output: {missing_axes}"
+                f"Fusion failed: no matching axes found. Missing: {missing_axes}"
             )
 
-        composite_score = float(weighted_score / total_weight)
-
-        # Normalize score
-        composite_score = round(composite_score, 4)
+        composite_score = round(weighted_score / total_weight, 4)
 
         repeat_max = self.config["score_ranges"]["repeat_max"] / 100.0
         borderline_max = self.config["score_ranges"]["borderline_max"] / 100.0
@@ -69,6 +94,7 @@ class ScoreFusion:
             overall_flag=overall_flag,
             axis_results=axis_results,
             metadata_summary={
-                "missing_axes": missing_axes
+                "missing_axes": missing_axes,
+                "axis_summary": axis_summary
             }
         )
