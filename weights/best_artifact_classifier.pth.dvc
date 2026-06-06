@@ -1,0 +1,5 @@
+outs:
+- md5: 9bb2d230c89ae0e0bbdd619d6dbcb4d3
+  size: 16336381
+  hash: md5
+  path: best_artifact_classifier.pth

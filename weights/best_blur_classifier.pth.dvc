@@ -1,0 +1,5 @@
+outs:
+- md5: 78d4e7271cd176604b82145cd51f712c
+  size: 16334661
+  hash: md5
+  path: best_blur_classifier.pth
