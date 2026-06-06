@@ -1,1 +1,3 @@
 /best_lung_unet.pth
+/best_blur_classifier.pth
+/best_artifact_classifier.pth
