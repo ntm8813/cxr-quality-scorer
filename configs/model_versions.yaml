@@ -1,21 +1,40 @@
+# configs/model_versions.yaml
 models:
   lung_segmentation:
     active_version: "v1.0"
     versions:
       "v1.0":
         path: "weights/best_lung_unet.pth"
-        description: "MONAI U-Net trained on NIH Chest X-ray dataset, Dice=0.9581"
+        description: "MONAI U-Net trained on nikhilpandey360/chest-xray-masks-and-labels, val Dice=0.9581"
 
   blur_classifier:
-    active_version: "v1.0"
+    active_version: "v2.0"
     versions:
-      "v1.0":
+      "v2.0":
         path: "weights/best_blur_classifier.pth"
-        description: "EfficientNet-B0 motion blur classifier trained on synthetic NIH CXR blur augmentation dataset, validation AUC=1.000"
+        description: >
+          EfficientNet-B0 motion blur binary classifier.
+          Trained on synthetic Gaussian blur augmentations (sigma 2/5/10)
+          of NIH CXR source images. Source-level 80/20 train/val split
+          applied — no source image appears in both sets.
+          Val AUC = 1.000 reflects high visual separability of synthetic
+          augmentations, not overfitting. Real-world performance assessed
+          via gold-standard reviewer comparison in Week 4.
+        val_auc: 1.0000
+        split_method: "source-level 80/20, seed=42"
 
   artifact_classifier:
-    active_version: "v1.0"
+    active_version: "v2.0"
     versions:
-      "v1.0":
+      "v2.0":
         path: "weights/best_artifact_classifier.pth"
-        description: "EfficientNet-B0 artifact classifier trained on synthetic NIH CXR artifact augmentation dataset, validation AUC=1.000"
+        description: >
+          EfficientNet-B0 artifact binary classifier.
+          Trained on synthetic grid-line, foreign-object, and
+          processing-halo augmentations of NIH CXR source images.
+          Source-level 80/20 train/val split applied.
+          Val AUC = 1.000 reflects high visual separability of synthetic
+          augmentations. Real-world performance assessed via gold-standard
+          reviewer comparison in Week 4.
+        val_auc: 1.0000
+        split_method: "source-level 80/20, seed=42"
