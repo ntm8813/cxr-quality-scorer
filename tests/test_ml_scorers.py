@@ -133,13 +133,12 @@ def test_pipeline_includes_artifact_axis():
     from pathlib import Path
     from src.pipeline import run_pipeline
 
-    sample_dir = Path("data/raw")
-    pngs = list(sample_dir.rglob("*.png"))[:3]
+    pngs = list(Path("data/raw").rglob("*.png"))[:3]
     if not pngs:
         pytest.skip("No sample PNG images in data/raw/")
 
     for p in pngs:
-        result = run_pipeline(str(p), explain=True)
+        result = run_pipeline(str(p))   # FIXED HERE
         axes   = [
             (r.axis if isinstance(r.axis, str) else r.axis.value)
             for r in result.axis_results
@@ -147,9 +146,6 @@ def test_pipeline_includes_artifact_axis():
         assert "artifact" in axes, \
             f"artifact axis missing from pipeline output. Got: {axes}"
         assert result.composite_score > 0
-        flag = result.overall_flag
-        assert flag in ("acceptable", "borderline", "repeat")
-
-        # Explanation enrichment check
+        assert result.overall_flag in ("acceptable", "borderline", "repeat")
         summary = result.metadata_summary.get("summary_rationale", "")
         assert len(summary) > 10, "summary_rationale too short"

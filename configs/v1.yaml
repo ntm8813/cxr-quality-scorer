@@ -36,3 +36,5 @@ axis_weights:
   inspiration: 0.10
   artifact: 0.15
   metadata: 0.05
+pipeline:
+  explain: true
