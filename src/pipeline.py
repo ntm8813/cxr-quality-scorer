@@ -15,6 +15,7 @@ from src.scorers.inspiration_scorer import InspirationScorer
 from src.scorers.metadata_scorer import MetadataScorer
 from src.scorers.rotation_scorer import RotationScorer
 from src.scorers.sharpness_scorer import SharpnessScorer
+from src.explanation.explanation_module import ExplanationModule
 
 from src.scorers.motion_blur_scorer import MotionBlurScorer
 from src.scorers.artifact_scorer import ArtifactScorer
@@ -121,6 +122,7 @@ def _merge_duplicate_axes(axis_results):
 def run_pipeline(
     image_path: str,
     config_path: str = "configs/v1.yaml",
+    explain: bool = False,
 ) -> StudyResult:
 
     with open(config_path, "r", encoding="utf-8") as f:
@@ -165,7 +167,16 @@ def run_pipeline(
     # ── Fusion
     fusion = ScoreFusion(config_path)
 
-    return fusion.fuse(
+    study = fusion.fuse(
         metadata.get("study_uid", "unknown"),
         axis_results,
     )
+
+    # ── Explanation enrichment (REQUIRED FOR TESTS) ──
+    try:
+        explainer = ExplanationModule()
+        study = explainer.enrich_study(study)
+    except Exception as e:
+        print(f"[EXPLANATION ERROR] {e}")
+
+    return study

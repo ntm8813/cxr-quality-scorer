@@ -8,6 +8,7 @@ import tempfile
 import os
 import time
 import json
+import pandas as pd
 from pathlib import Path
 
 st.set_page_config(
@@ -31,6 +32,9 @@ st.title("🫁 CXR Image Quality Scorer")
 st.caption("Medtatvaa Healthcare · MTV-INT-RAD-003 · v1.0 Week 3 MVP")
 st.divider()
 
+# =========================
+# SINGLE FILE MODE
+# =========================
 uploaded = st.file_uploader(
     "Upload a chest radiograph (DICOM or PNG/JPG)",
     type=["dcm", "png", "jpg", "jpeg"],
@@ -123,3 +127,107 @@ if uploaded is not None:
             file_name=f"{result.study_uid}_quality_report.json",
             mime="application/json",
         )
+
+
+# =========================
+# BATCH MODE (ADDED BLOCK)
+# =========================
+
+st.divider()
+st.subheader("📦 Batch Processing")
+st.caption("Upload a CSV with a 'path' column. Each row should be an absolute or relative path to a .png or .dcm file.")
+
+batch_csv = st.file_uploader(
+    "Upload batch CSV",
+    type=["csv"],
+    key="batch_uploader",
+)
+
+if batch_csv is not None:
+
+    df_batch = pd.read_csv(batch_csv)
+
+    if "path" not in df_batch.columns:
+        st.error("CSV must have a column named 'path'.")
+        st.stop()
+
+    paths = df_batch["path"].tolist()
+    st.info(f"Found {len(paths)} files. Processing...")
+
+    progress_bar = st.progress(0)
+    status_text = st.empty()
+    results_list = []
+
+    run_pipeline = _get_pipeline()
+
+    for i, fpath in enumerate(paths):
+        status_text.text(f"Processing {i+1}/{len(paths)}: {Path(fpath).name}")
+
+        try:
+            r = run_pipeline(str(fpath), explain=True)
+
+            flag_v = r.overall_flag
+            score_v = r.composite_score
+            score_pct = score_v * 100.0 if score_v <= 1.0 else score_v
+
+            row = {
+                "file": Path(fpath).name,
+                "study_uid": r.study_uid,
+                "composite_score": round(score_pct, 1),
+                "overall_flag": flag_v,
+            }
+
+            for ar in r.axis_results:
+                ax = ar.axis if isinstance(ar.axis, str) else ar.axis.value
+                row[f"{ax}_score"] = round(ar.score, 3)
+                row[f"{ax}_flag"] = ar.flag if isinstance(ar.flag, str) else ar.flag.value
+
+            results_list.append(row)
+
+        except Exception as e:
+            results_list.append({
+                "file": Path(fpath).name,
+                "error": str(e),
+            })
+
+        progress_bar.progress((i + 1) / len(paths))
+
+    status_text.text("Batch complete.")
+    df_results = pd.DataFrame(results_list)
+
+    c1, c2, c3 = st.columns(3)
+    if "overall_flag" in df_results.columns:
+        c1.metric("🟢 Acceptable", int((df_results["overall_flag"] == "acceptable").sum()))
+        c2.metric("🟡 Borderline", int((df_results["overall_flag"] == "borderline").sum()))
+        c3.metric("🔴 Repeat", int((df_results["overall_flag"] == "repeat").sum()))
+
+    st.dataframe(df_results, use_container_width=True)
+
+    st.subheader("Per-Study Detail")
+
+    for row in results_list:
+        if "error" in row:
+            st.error(f"{row['file']}: {row['error']}")
+            continue
+
+        flg = row.get("overall_flag", "")
+        icon = _FLAG_ICON.get(flg, "⚪")
+
+        with st.expander(f"{icon} {row['file']} — {flg} ({row.get('composite_score','?')}/100)"):
+
+            axis_scores = {k.replace("_score", ""): v
+                           for k, v in row.items() if k.endswith("_score")}
+
+            for ax_name, ax_score in axis_scores.items():
+                ax_flag = row.get(f"{ax_name}_flag", "")
+                st.markdown(
+                    f"**{ax_name}**: `{ax_score:.3f}` "
+                    f"{_FLAG_ICON.get(ax_flag,'⚪')} {ax_flag}"
+                )
+
+    st.download_button(
+        "⬇ Download batch results CSV",
+        data=df_results.to_csv(index=False),
+        file_name="batch_results.csv",
+        mime="text/csv",
+    )
