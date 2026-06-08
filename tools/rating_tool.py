@@ -42,8 +42,8 @@ manifest = pd.read_csv(
 )
 
 all_images = [
-    IMAGE_DIR / fname
-    for fname in manifest["filename"]
+    IMAGE_DIR / f"{uid}.png"
+    for uid in manifest["study_uid"]
 ]
 
 st.title("🫁 CXR Quality Reviewer Tool")
