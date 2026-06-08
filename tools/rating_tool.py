@@ -35,8 +35,16 @@ else:
     )
 
 # ── Find images ────────────────────────────────────────────────
-IMAGE_DIR = Path("data/raw/sample_dicoms")
-all_images = sorted(IMAGE_DIR.glob("*.png"))
+IMAGE_DIR = Path("data/gold_standard")
+
+manifest = pd.read_csv(
+    "manifests/gold_standard_manifest.csv"
+)
+
+all_images = [
+    IMAGE_DIR / fname
+    for fname in manifest["filename"]
+]
 
 st.title("🫁 CXR Quality Reviewer Tool")
 st.caption(
