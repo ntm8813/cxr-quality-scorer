@@ -1,0 +1,55 @@
+{
+  "n_studies": 300,
+  "per_axis": {
+    "sharpness": {
+      "kappa": 0.2605,
+      "n": 300,
+      "agreement_pct": 79.3,
+      "interpretation": "fair"
+    },
+    "exposure": {
+      "kappa": 0.5841,
+      "n": 300,
+      "agreement_pct": 75.7,
+      "interpretation": "moderate"
+    },
+    "rotation": {
+      "kappa": 0.3019,
+      "n": 300,
+      "agreement_pct": 84.0,
+      "interpretation": "fair"
+    },
+    "coverage": {
+      "kappa": 0.328,
+      "n": 300,
+      "agreement_pct": 80.0,
+      "interpretation": "fair"
+    },
+    "inspiration": {
+      "kappa": -0.0494,
+      "n": 300,
+      "agreement_pct": 64.7,
+      "interpretation": "poor"
+    },
+    "artifact": {
+      "kappa": 0.453,
+      "n": 300,
+      "agreement_pct": 74.0,
+      "interpretation": "moderate"
+    },
+    "metadata": {
+      "kappa": -0.0071,
+      "n": 300,
+      "agreement_pct": 98.3,
+      "interpretation": "poor"
+    },
+    "global_rating": {
+      "kappa": 0.5248,
+      "n": 300,
+      "agreement_pct": 72.0,
+      "interpretation": "moderate"
+    }
+  },
+  "ceiling_kappa": 0.5248,
+  "note": "Quadratic-weighted Cohen's kappa. global_rating kappa is the ceiling for model evaluation \u2014 model should not be expected to exceed human inter-rater agreement."
+}
