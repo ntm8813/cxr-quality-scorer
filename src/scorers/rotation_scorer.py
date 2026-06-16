@@ -42,7 +42,12 @@ class RotationScorer(BaseScorer):
             signed_angle_deg = 0.0
             confidence = 0.0
 
-        angle_error_deg = abs(float(signed_angle_deg))
+        orientation_deg = abs(float(signed_angle_deg))
+
+        angle_error_deg = min(
+            abs(orientation_deg - 90.0),
+            abs(orientation_deg)
+        )
 
         denom = max(1.0, tolerance * 1.35)
         confidence_boost = 0.55 + 0.45 * float(np.clip(confidence, 0.0, 1.0))
