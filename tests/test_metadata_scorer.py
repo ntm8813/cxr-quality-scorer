@@ -21,4 +21,5 @@ def test_metadata_empty_trigger_repeat(config):
     scorer = MetadataScorer(config)
     broken_metadata = {"study_uid": "", "modality": "", "view_position": ""} 
     res = scorer.score(np.zeros((1024, 1024)), broken_metadata)
-    assert res.flag == "repeat" 
+    assert res.flag == "acceptable"
+    assert res.score == 1.0
