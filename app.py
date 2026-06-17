@@ -29,7 +29,7 @@ def _get_pipeline():
 
 
 st.title("🫁 CXR Image Quality Scorer")
-st.caption("Medtatvaa Healthcare · MTV-INT-RAD-003 · v1.0 Week 3 MVP")
+st.caption("Medtatvaa Healthcare · MTV-INT-RAD-003 · Week 4 Validation Build")
 st.divider()
 
 # =========================
@@ -127,8 +127,6 @@ if uploaded is not None:
             file_name=f"{result.study_uid}_quality_report.json",
             mime="application/json",
         )
-
-
 # =========================
 # BATCH MODE (ADDED BLOCK)
 # =========================
@@ -164,7 +162,7 @@ if batch_csv is not None:
         status_text.text(f"Processing {i+1}/{len(paths)}: {Path(fpath).name}")
 
         try:
-            r = run_pipeline(str(fpath), explain=True)
+            r = run_pipeline(str(fpath))
 
             flag_v = r.overall_flag
             score_v = r.composite_score
@@ -231,3 +229,155 @@ if batch_csv is not None:
         file_name="batch_results.csv",
         mime="text/csv",
     )
+
+# =========================
+# VALIDATION DASHBOARD
+# =========================
+
+st.divider()
+st.subheader("📊 Validation Dashboard")
+
+val_json = Path("reports/validation_results.json")
+kappa_json = Path("reports/interrater_kappa.json")
+
+if val_json.exists():
+
+    with open(val_json) as f:
+        val = json.load(f)
+
+    st.metric(
+        "Validation Studies",
+        val.get("n_studies", 0)
+    )
+
+    if kappa_json.exists():
+
+        with open(kappa_json) as f:
+            human = json.load(f)
+
+        st.info(
+            f"Human Inter-Rater Ceiling κ = "
+            f"{human.get('ceiling_kappa', 0):.4f}"
+        )
+
+    overall = val["overall_kappa"]
+
+    c1, c2, c3 = st.columns(3)
+
+    c1.metric(
+        "Overall Model κ",
+        f"{overall['kappa']:.4f}"
+    )
+    ceiling = None
+
+    if kappa_json.exists():
+        ceiling = human.get("ceiling_kappa", 0)
+
+    if ceiling and ceiling > 0:
+        pct_of_human = 100 * overall["kappa"] / ceiling
+
+        st.caption(
+            f"Model currently achieves "
+            f"{pct_of_human:.1f}% of human inter-rater agreement."
+        )
+
+    c2.metric(
+        "Agreement %",
+        f"{overall['agreement_pct']:.1f}%"
+    )
+
+    c3.metric(
+        "Interpretation",
+        overall["interpretation"]
+    )
+
+    st.divider()
+
+    sp = val["spearman"]
+
+    st.subheader("Correlation")
+
+    st.write(f"Spearman ρ = {sp['rho']:.4f}")
+    st.write(f"p-value = {sp['p_value']:.6f}")
+
+    st.caption(sp["note"])
+
+    st.divider()
+
+    st.subheader("Per-Axis Performance")
+
+    rows = []
+
+    for axis, data in val["per_axis_kappa"].items():
+
+        rows.append({
+            "Axis": axis,
+            "Kappa": data["kappa"],
+            "Agreement %": data["agreement_pct"],
+            "N": data["n"],
+            "Interpretation": data["interpretation"]
+        })
+
+    st.dataframe(
+        pd.DataFrame(rows),
+        use_container_width=True
+    )
+
+    calibration_plot = Path(
+        "reports/figures/validation_calibration.png"
+    )
+
+    if calibration_plot.exists():
+
+        st.subheader("Calibration Plot")
+
+        st.image(
+            str(calibration_plot)
+        )
+
+    confusion_files = sorted(
+        Path("reports/figures").glob("confusion_*.png")
+    )
+
+    if confusion_files:
+
+        st.subheader("Confusion Matrices")
+
+        cols = st.columns(2)
+
+        for i, img in enumerate(confusion_files):
+
+            with cols[i % 2]:
+
+                st.image(
+                    str(img),
+                    caption=img.stem.replace(
+                        "confusion_",
+                        ""
+                    )
+                )
+
+    st.divider()
+
+    st.subheader("Current Model Snapshot")
+
+    st.markdown(f"""
+**Thresholds**
+- Repeat ≤ 45
+- Borderline ≤ 65
+- Acceptable > 65
+
+**Latest Validation**
+- {val.get("n_studies", 0)} studies
+- Overall κ = {overall['kappa']:.4f}
+- Agreement = {overall['agreement_pct']:.1f}%
+- Spearman ρ = {sp['rho']:.4f}
+""")
+
+else:
+
+    st.warning(
+        "Validation results not found. "
+        "Run: python -m src.analysis.compute_validation"
+    )
+
