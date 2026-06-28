@@ -241,6 +241,115 @@ def weighted_orientation_deg(image: np.ndarray) -> Tuple[float, float, int]:
         confidence = float(np.clip((ev_sorted[-1] - ev_sorted[0]) / ev_sorted[-1], 0.0, 1.0))
 
     return signed_angle_deg, confidence, int(xs.size)
+# src/scorers/quality_utils.py
+# ADD this function anywhere after weighted_orientation_deg() in the existing file.
+# Do not delete or modify any existing function — only append this one.
+
+def mask_anchored_orientation_deg(
+    image: np.ndarray,
+    lung_mask: np.ndarray,
+) -> Tuple[float, float, int]:
+    """
+    Estimates patient rotation using the LINE CONNECTING THE TWO LUNG
+    CENTROIDS, not the mask's overall PCA principal axis.
+
+    Why this replaced the original PCA-based version: the original
+    function assumed a correctly positioned patient's combined lung
+    mask is VERTICALLY elongated. This is false. Two separate lung
+    fields side-by-side with a mediastinal gap between them produce a
+    mask that is roughly as WIDE as it is TALL (confirmed on real U-Net
+    output: bbox aspect ratios of 0.66-1.30 across multiple real CXRs,
+    not the >1.5 vertical elongation the PCA approach required). PCA on
+    that shape locks onto a near-horizontal axis regardless of actual
+    patient rotation, producing 70-85 degree "rotation" on visually
+    upright images.
+
+    The correct anatomical invariant: in an upright, unrotated patient,
+    the LEFT lung centroid and RIGHT lung centroid sit at the same
+    vertical height. The line between them is horizontal. Patient
+    rotation tilts this line. This is robust to the mediastinal gap and
+    to left/right lung volume asymmetry, because it only depends on
+    each lung's center of mass, not the combined mask's overall shape.
+
+    Returns:
+        signed_angle_deg : tilt of the inter-centroid line from
+                            horizontal, in degrees. 0 = upright,
+                            range approximately [-90, 90].
+        confidence       : based on left/right size balance and
+                            horizontal separation. Low confidence means
+                            the two components are too unequal in size
+                            or too close together to trust the angle.
+        foreground_count : total mask pixels used.
+    """
+    mask = np.asarray(lung_mask).astype(bool).astype(np.uint8)
+    total_fg = int(mask.sum())
+
+    if total_fg < 50:
+        return 0.0, 0.0, total_fg
+
+    num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(
+        mask, connectivity=8
+    )
+
+    # label 0 is background; collect real components
+    components = []
+    for label in range(1, num_labels):
+        area = int(stats[label, cv2.CC_STAT_AREA])
+        cx, cy = centroids[label]
+        components.append((area, cx, cy))
+
+    if len(components) < 2:
+        # Only one connected blob (lungs touching/merged, or segmentation
+        # didn't separate them) -- no reliable left/right pair available.
+        return 0.0, 0.0, total_fg
+
+    # Keep the two largest components -- these should be left and right lung
+    components.sort(key=lambda c: c[0], reverse=True)
+    (area_a, cx_a, cy_a), (area_b, cx_b, cy_b) = components[0], components[1]
+
+    # Order them left-to-right by x position for a consistent sign convention
+    if cx_a <= cx_b:
+        left_cx, left_cy = cx_a, cy_a
+        right_cx, right_cy = cx_b, cy_b
+        left_area, right_area = area_a, area_b
+    else:
+        left_cx, left_cy = cx_b, cy_b
+        right_cx, right_cy = cx_a, cy_a
+        left_area, right_area = area_b, area_a
+
+    dx = right_cx - left_cx
+    dy = right_cy - left_cy
+
+    if abs(dx) < 1e-6 and abs(dy) < 1e-6:
+        return 0.0, 0.0, total_fg
+
+    # Angle of the inter-centroid line from horizontal.
+    # 0 = perfectly horizontal (upright patient).
+    # Positive = right lung centroid lower than left (clockwise tilt).
+    signed_angle_deg = float(np.degrees(np.arctan2(dy, dx)))
+
+    # Normalize to [-90, 90] -- a line and its reverse direction are
+    # the same line, so wrap into a single sign-consistent range.
+    if signed_angle_deg > 90.0:
+        signed_angle_deg -= 180.0
+    elif signed_angle_deg < -90.0:
+        signed_angle_deg += 180.0
+
+    # ── Confidence ──────────────────────────────────────────────────
+    # Two factors reduce trust in this angle:
+    #  1. Size imbalance between left/right components (one might be
+    #     a segmentation artifact, not a real lung)
+    #  2. The two centroids being too close together horizontally
+    #     (small dx means a tiny rotation in pixel-noise terms swings
+    #     the angle wildly -- division-by-small-number instability)
+    size_ratio = min(left_area, right_area) / max(left_area, right_area, 1)
+
+    img_w = image.shape[1] if image.ndim >= 2 else 1024
+    separation_frac = float(np.clip(abs(dx) / max(img_w * 0.15, 1.0), 0.0, 1.0))
+
+    confidence = float(np.clip(size_ratio * separation_frac, 0.0, 1.0))
+
+    return signed_angle_deg, confidence, total_fg
 
 
 def border_contact_fraction(binary_mask: np.ndarray) -> float:

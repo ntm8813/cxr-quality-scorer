@@ -18,7 +18,7 @@ thresholds:
   ei_deviation_borderline_max: 2.0
 score_ranges:
   repeat_max: 45
-  borderline_max: 65
+  borderline_max: 60
 axis_weights:
   sharpness: 0.2
   exposure: 0.2

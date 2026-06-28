@@ -4,6 +4,9 @@
 Day 24 — Error analysis and failure catalogue.
 Identifies all model-reviewer disagreements, categorises them
 into failure modes, and writes reports/failure_catalogue.md
+
+Re-run after the RotationScorer v2 fix to confirm the rotation failure
+mode documented in reports/WEEK4_STATUS_REPORT.md has been resolved.
 """
 from __future__ import annotations
 
@@ -51,12 +54,69 @@ def classify_disagreement(model_int: int, cons_int: int) -> str:
     return "AGREE"
 
 
+def check_estimation_method_skew(predictions_csv: Path) -> dict:
+    """
+    Diagnostic added after the Week 4 rotation bug.
+
+    Checks data/predictions/model_v1.csv for a rotation_estimation_method
+    column (if the pipeline logs raw_metrics into predictions) and flags
+    if one method dominates >95% of studies — a signal that the primary
+    estimator is silently falling back almost always, which is exactly
+    what happened with the gradient-PCA rotation bug.
+
+    If the column isn't present in predictions (it may only live in
+    full AxisResult.raw_metrics, not the flattened CSV), this returns
+    a note rather than failing.
+    """
+    df = pd.read_csv(predictions_csv)
+    method_col = "rotation_estimation_method"
+
+    if method_col not in df.columns:
+        return {
+            "checked": False,
+            "note": (
+                f"'{method_col}' not found in {predictions_csv}. "
+                "This check requires the pipeline to flatten "
+                "raw_metrics['estimation_method'] into the predictions CSV. "
+                "Skipping skew check."
+            ),
+        }
+
+    counts = df[method_col].value_counts(normalize=True).to_dict()
+    dominant_method = max(counts, key=counts.get)
+    dominant_pct = counts[dominant_method] * 100
+
+    return {
+        "checked": True,
+        "method_distribution_pct": {k: round(v * 100, 1) for k, v in counts.items()},
+        "dominant_method": dominant_method,
+        "dominant_pct": round(dominant_pct, 1),
+        "warning": (
+            f"WARNING: '{dominant_method}' used in {dominant_pct:.1f}% of studies. "
+            "A single estimation method dominating almost all studies can mask "
+            "a silent fallback failure (see Week 4 rotation bug)."
+            if dominant_pct > 95.0
+            else None
+        ),
+    }
+
+
 def main() -> None:
     preds    = pd.read_csv(PREDICTIONS)
     consensus= pd.read_csv(CONSENSUS)
     merged   = preds.merge(consensus, on="study_uid", how="inner")
 
     print(f"Analysing {len(merged)} studies...")
+
+    # ── New: estimation-method skew check ──────────────────────────────
+    skew_check = check_estimation_method_skew(PREDICTIONS)
+    if skew_check.get("checked"):
+        print(f"\nRotation estimation method distribution: "
+              f"{skew_check['method_distribution_pct']}")
+        if skew_check.get("warning"):
+            print(f"  {skew_check['warning']}")
+    else:
+        print(f"\n{skew_check['note']}")
 
     # Per-axis disagreement catalogue
     all_disagreements = []
@@ -92,7 +152,7 @@ def main() -> None:
 
     disagree_df = pd.DataFrame(all_disagreements)
     disagree_df.to_csv(OUTPUT_DIR / "disagreements.csv", index=False)
-    print(f"Total disagreements: {len(all_disagreements)}")
+    print(f"\nTotal disagreements: {len(all_disagreements)}")
 
     # Overall flag disagreements
     overall_disag = []
@@ -112,7 +172,7 @@ def main() -> None:
                 })
 
     # Write failure catalogue markdown
-    _write_catalogue(all_disagreements, overall_disag, failure_counts, merged)
+    _write_catalogue(all_disagreements, overall_disag, failure_counts, merged, skew_check)
     print(f"Saved → {OUTPUT_DIR / 'failure_catalogue.md'}")
 
 
@@ -121,6 +181,7 @@ def _write_catalogue(
     overall_disag: list,
     failure_counts: dict,
     merged: pd.DataFrame,
+    skew_check: dict,
 ) -> None:
     n_total     = len(merged)
     n_disag     = len(axis_disag)
@@ -136,9 +197,21 @@ def _write_catalogue(
         f"- Overall flag disagreements: **{n_ov_disag}** "
         f"({100*n_ov_disag/max(n_total,1):.1f}% of studies)",
         "",
-        "## Failure Mode Definitions",
-        "",
     ]
+
+    # ── New: skew check section ─────────────────────────────────────
+    lines += ["## Rotation Estimation Method Distribution", ""]
+    if skew_check.get("checked"):
+        for method, pct in skew_check["method_distribution_pct"].items():
+            lines.append(f"- `{method}`: {pct}%")
+        if skew_check.get("warning"):
+            lines.append("")
+            lines.append(f"⚠️ **{skew_check['warning']}**")
+    else:
+        lines.append(f"_{skew_check.get('note', 'Not checked.')}_")
+    lines.append("")
+
+    lines += ["## Failure Mode Definitions", ""]
     for code, desc in FAILURE_MODES.items():
         lines.append(f"- **{code}**: {desc}")
     lines.append("")
@@ -210,7 +283,7 @@ def _write_catalogue(
         "|------|--------------------|----------------------|-----------|",
         "| sharpness | 40 | TBD | TBD |",
         "| exposure  | 40 | TBD | TBD |",
-        "| rotation  | 40 | TBD | TBD |",
+        "| rotation  | 40 | TBD | Re-evaluate after RotationScorer v2 (mask-anchored) |",
         "",
         "---",
         "_Generated automatically by src/analysis/error_analysis.py_",

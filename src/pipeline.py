@@ -123,7 +123,7 @@ def run_pipeline(
         ExposureScorer(config),
         SharpnessScorer(config),
         MetadataScorer(config),
-        RotationScorer(config),
+        RotationScorer(config, model=unet_model),
         CoverageScorer(config, model=unet_model),
         InspirationScorer(config, model=unet_model),
         MotionBlurScorer(config, model=blur_model),
