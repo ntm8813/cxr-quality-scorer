@@ -11,6 +11,8 @@ import json
 import pandas as pd
 from pathlib import Path
 
+from schemas.rejected_result import RejectedResult
+
 st.set_page_config(
     page_title="CXR Quality Scorer — MTV-INT-RAD-003",
     page_icon="🫁",
@@ -67,6 +69,19 @@ if uploaded is not None:
 
     if error:
         st.error(f"Pipeline error: {error}")
+        st.stop()
+
+    if isinstance(result, RejectedResult):
+        st.warning(
+            f"⚠️ Study not scored. Input failed validation.\n\n"
+            f"**Reason:** {result.reason}"
+        )
+
+        with st.expander("Failed checks (technical detail)"):
+            for check in result.failed_checks:
+                st.code(check)
+            st.json(result.details)
+
         st.stop()
 
     flag = result.overall_flag
@@ -164,6 +179,18 @@ if batch_csv is not None:
         try:
             r = run_pipeline(str(fpath))
 
+            if isinstance(r, RejectedResult):
+                results_list.append({
+                    "file": Path(fpath).name,
+                    "study_uid": r.study_uid,
+                    "status": "rejected",
+                    "reason": r.reason,
+                    "failed_checks": "; ".join(r.failed_checks),
+                })
+
+                progress_bar.progress((i + 1) / len(paths))
+                continue
+
             flag_v = r.overall_flag
             score_v = r.composite_score
             score_pct = score_v * 100.0 if score_v <= 1.0 else score_v
@@ -193,11 +220,29 @@ if batch_csv is not None:
     status_text.text("Batch complete.")
     df_results = pd.DataFrame(results_list)
 
-    c1, c2, c3 = st.columns(3)
+    c1, c2, c3, c4 = st.columns(4)
+
     if "overall_flag" in df_results.columns:
-        c1.metric("🟢 Acceptable", int((df_results["overall_flag"] == "acceptable").sum()))
-        c2.metric("🟡 Borderline", int((df_results["overall_flag"] == "borderline").sum()))
-        c3.metric("🔴 Repeat", int((df_results["overall_flag"] == "repeat").sum()))
+        c1.metric(
+            "🟢 Acceptable",
+            int((df_results["overall_flag"] == "acceptable").sum())
+        )
+
+        c2.metric(
+            "🟡 Borderline",
+            int((df_results["overall_flag"] == "borderline").sum())
+        )
+
+        c3.metric(
+            "🔴 Repeat",
+            int((df_results["overall_flag"] == "repeat").sum())
+        )
+
+    if "status" in df_results.columns:
+        c4.metric(
+            "⛔ Rejected (failed validation)",
+            int((df_results["status"] == "rejected").sum())
+        )
 
     st.dataframe(df_results, use_container_width=True)
 

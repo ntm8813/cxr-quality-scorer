@@ -11,3 +11,16 @@ __pycache__/
 !/data/**/.gitignore
 !*.dvc
 !**/*.dvc
+
+# Generated repository packaging
+repomix-output.xml
+
+# Local MLFlow database
+mlflow.db
+
+# Python
+__pycache__/
+*.py[cod]
+
+# DVC cache
+.dvc/cache/

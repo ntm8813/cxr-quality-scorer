@@ -1,0 +1,195 @@
+{
+  "n_studies": 300,
+  "per_axis_kappa": {
+    "sharpness": {
+      "kappa": 0.0254,
+      "n": 300,
+      "agreement_pct": 71.3,
+      "confusion_matrix": [
+        [
+          206,
+          19,
+          0
+        ],
+        [
+          66,
+          8,
+          0
+        ],
+        [
+          1,
+          0,
+          0
+        ]
+      ],
+      "interpretation": "slight"
+    },
+    "exposure": {
+      "kappa": 0.0032,
+      "n": 300,
+      "agreement_pct": 63.0,
+      "confusion_matrix": [
+        [
+          188,
+          1,
+          0
+        ],
+        [
+          103,
+          1,
+          0
+        ],
+        [
+          7,
+          0,
+          0
+        ]
+      ],
+      "interpretation": "slight"
+    },
+    "rotation": {
+      "kappa": 0.0317,
+      "n": 300,
+      "agreement_pct": 19.3,
+      "confusion_matrix": [
+        [
+          53,
+          20,
+          169
+        ],
+        [
+          5,
+          5,
+          48
+        ],
+        [
+          0,
+          0,
+          0
+        ]
+      ],
+      "interpretation": "slight"
+    },
+    "coverage": {
+      "kappa": 0.0604,
+      "n": 300,
+      "agreement_pct": 75.7,
+      "confusion_matrix": [
+        [
+          226,
+          4,
+          0
+        ],
+        [
+          67,
+          0,
+          0
+        ],
+        [
+          2,
+          0,
+          1
+        ]
+      ],
+      "interpretation": "slight"
+    },
+    "inspiration": {
+      "kappa": 0.0021,
+      "n": 300,
+      "agreement_pct": 22.0,
+      "confusion_matrix": [
+        [
+          0,
+          117,
+          74
+        ],
+        [
+          0,
+          66,
+          43
+        ],
+        [
+          0,
+          0,
+          0
+        ]
+      ],
+      "interpretation": "slight"
+    },
+    "artifact": {
+      "kappa": 0.0443,
+      "n": 300,
+      "agreement_pct": 11.3,
+      "confusion_matrix": [
+        [
+          30,
+          2,
+          124
+        ],
+        [
+          14,
+          2,
+          126
+        ],
+        [
+          0,
+          0,
+          2
+        ]
+      ],
+      "interpretation": "slight"
+    },
+    "metadata": {
+      "kappa": 0.0,
+      "n": 300,
+      "agreement_pct": 98.3,
+      "confusion_matrix": [
+        [
+          295,
+          0,
+          0
+        ],
+        [
+          5,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ]
+      ],
+      "interpretation": "slight"
+    }
+  },
+  "overall_kappa": {
+    "kappa": 0.2205,
+    "n": 300,
+    "agreement_pct": 58.3,
+    "confusion_matrix": [
+      [
+        127,
+        61,
+        0
+      ],
+      [
+        49,
+        47,
+        0
+      ],
+      [
+        5,
+        10,
+        1
+      ]
+    ],
+    "interpretation": "fair"
+  },
+  "spearman": {
+    "rho": -0.1942,
+    "p_value": 0.000718,
+    "n": 300,
+    "note": "Negative rho expected: higher composite score = better quality, lower reviewer rating (1=acceptable) = better quality."
+  }
+}

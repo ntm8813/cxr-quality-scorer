@@ -20,6 +20,8 @@ from src.scorers.motion_blur_scorer import MotionBlurScorer
 from src.scorers.artifact_scorer import ArtifactScorer
 from src.explanation.explanation_module import ExplanationModule
 from schemas.study_result import StudyResult
+from src.validation.input_validator import validate_input
+from schemas.rejected_result import RejectedResult
 
 
 def _resize_float_image(image: np.ndarray, size: int) -> np.ndarray:
@@ -59,6 +61,7 @@ def load_image_any(path: str, resize_to: int | None = None):
 
     if path.lower().endswith(".dcm"):
         from src.io.dicom_reader import DICOMReader
+
         image, metadata = DICOMReader().load(path)
 
         if resize_to is not None:
@@ -105,18 +108,56 @@ def _merge_duplicate_axes(axis_results):
 def run_pipeline(
     image_path: str,
     config_path: str = "configs/v1.yaml",
-) -> StudyResult:
+) -> StudyResult | RejectedResult:
 
     with open(config_path, "r", encoding="utf-8") as f:
         config = yaml.safe_load(f)
 
-    resize_to = int(config.get("image", {}).get("resize", 1024))
+    resize_to = (
+        int(config.get("image", {}).get("resize", 1024))
+        if config.get("image", {}).get("resize") is not None
+        else None
+    )
+
     image, metadata = load_image_any(image_path, resize_to=resize_to)
+
+    # --- Fail-safe / input validation gate ---------------------------------
+    # Modality / view-position / body-part filtering happens UPSTREAM in
+    # MistiQRad at ingest time. This gate does NOT re-check clinical content;
+    # it only verifies the array and metadata are structurally usable, so a
+    # malformed or unexpected input fails safe instead of producing a
+    # confident, meaningless score.
+    #
+    # expect_square is tied to whether resize_to is actually set. If resize
+    # is disabled in config, a non-square image is expected and valid.
+    validation = validate_input(
+        image,
+        metadata,
+        expect_square=(resize_to is not None),
+    )
+
+    if not validation.is_valid:
+        fallback_uid = "unknown"
+
+        if metadata and metadata.get("study_uid"):
+            fallback_uid = metadata["study_uid"]
+        elif metadata and metadata.get("source_path"):
+            fallback_uid = f"unidentified:{metadata['source_path']}"
+        elif image_path:
+            fallback_uid = f"unidentified:{image_path}"
+
+        return RejectedResult(
+            study_uid=fallback_uid,
+            reason=validation.reason,
+            failed_checks=validation.failed_checks,
+            details=validation.details,
+        )
+    # -----------------------------------------------------------------------
 
     registry = ModelRegistry()
 
-    unet_model     = registry.load_lung_segmentation(device="cpu")
-    blur_model     = registry.load_blur_classifier(device="cpu")
+    unet_model = registry.load_lung_segmentation(device="cpu")
+    blur_model = registry.load_blur_classifier(device="cpu")
     artifact_model = registry.load_artifact_classifier(device="cpu")
 
     scorers = [
@@ -143,7 +184,7 @@ def run_pipeline(
     fusion = ScoreFusion(config_path)
     study = fusion.fuse(metadata.get("study_uid", "unknown"), axis_results)
 
-    # ✅ FIX: explanation toggle (safe + production control)
+    # Explanation toggle (safe + production control)
     explain = config.get("pipeline", {}).get("explain", True)
 
     if explain:

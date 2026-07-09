@@ -1,0 +1,572 @@
+{
+  "interrater_kappa": {
+    "n_studies": 300,
+    "per_axis": {
+      "sharpness": {
+        "kappa": 0.2605,
+        "n": 300,
+        "agreement_pct": 79.3,
+        "interpretation": "fair"
+      },
+      "exposure": {
+        "kappa": 0.5841,
+        "n": 300,
+        "agreement_pct": 75.7,
+        "interpretation": "moderate"
+      },
+      "rotation": {
+        "kappa": 0.3019,
+        "n": 300,
+        "agreement_pct": 84.0,
+        "interpretation": "fair"
+      },
+      "coverage": {
+        "kappa": 0.328,
+        "n": 300,
+        "agreement_pct": 80.0,
+        "interpretation": "fair"
+      },
+      "inspiration": {
+        "kappa": -0.0494,
+        "n": 300,
+        "agreement_pct": 64.7,
+        "interpretation": "poor"
+      },
+      "artifact": {
+        "kappa": 0.453,
+        "n": 300,
+        "agreement_pct": 74.0,
+        "interpretation": "moderate"
+      },
+      "metadata": {
+        "kappa": -0.0071,
+        "n": 300,
+        "agreement_pct": 98.3,
+        "interpretation": "poor"
+      },
+      "global_rating": {
+        "kappa": 0.5248,
+        "n": 300,
+        "agreement_pct": 72.0,
+        "interpretation": "moderate"
+      }
+    },
+    "ceiling_kappa": 0.5248,
+    "note": "Quadratic-weighted Cohen's kappa. global_rating kappa is the ceiling for model evaluation \u2014 model should not be expected to exceed human inter-rater agreement."
+  },
+  "validation_results": {
+    "n_studies": 300,
+    "per_axis_kappa": {
+      "sharpness": {
+        "kappa": 0.0254,
+        "n": 300,
+        "agreement_pct": 71.3,
+        "confusion_matrix": [
+          [
+            206,
+            19,
+            0
+          ],
+          [
+            66,
+            8,
+            0
+          ],
+          [
+            1,
+            0,
+            0
+          ]
+        ],
+        "interpretation": "slight"
+      },
+      "exposure": {
+        "kappa": 0.0032,
+        "n": 300,
+        "agreement_pct": 63.0,
+        "confusion_matrix": [
+          [
+            188,
+            1,
+            0
+          ],
+          [
+            103,
+            1,
+            0
+          ],
+          [
+            7,
+            0,
+            0
+          ]
+        ],
+        "interpretation": "slight"
+      },
+      "rotation": {
+        "kappa": 0.0317,
+        "n": 300,
+        "agreement_pct": 19.3,
+        "confusion_matrix": [
+          [
+            53,
+            20,
+            169
+          ],
+          [
+            5,
+            5,
+            48
+          ],
+          [
+            0,
+            0,
+            0
+          ]
+        ],
+        "interpretation": "slight"
+      },
+      "coverage": {
+        "kappa": 0.0604,
+        "n": 300,
+        "agreement_pct": 75.7,
+        "confusion_matrix": [
+          [
+            226,
+            4,
+            0
+          ],
+          [
+            67,
+            0,
+            0
+          ],
+          [
+            2,
+            0,
+            1
+          ]
+        ],
+        "interpretation": "slight"
+      },
+      "inspiration": {
+        "kappa": 0.0021,
+        "n": 300,
+        "agreement_pct": 22.0,
+        "confusion_matrix": [
+          [
+            0,
+            117,
+            74
+          ],
+          [
+            0,
+            66,
+            43
+          ],
+          [
+            0,
+            0,
+            0
+          ]
+        ],
+        "interpretation": "slight"
+      },
+      "artifact": {
+        "kappa": 0.0443,
+        "n": 300,
+        "agreement_pct": 11.3,
+        "confusion_matrix": [
+          [
+            30,
+            2,
+            124
+          ],
+          [
+            14,
+            2,
+            126
+          ],
+          [
+            0,
+            0,
+            2
+          ]
+        ],
+        "interpretation": "slight"
+      },
+      "metadata": {
+        "kappa": 0.0,
+        "n": 300,
+        "agreement_pct": 98.3,
+        "confusion_matrix": [
+          [
+            295,
+            0,
+            0
+          ],
+          [
+            5,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0
+          ]
+        ],
+        "interpretation": "slight"
+      }
+    },
+    "overall_kappa": {
+      "kappa": 0.2205,
+      "n": 300,
+      "agreement_pct": 58.3,
+      "confusion_matrix": [
+        [
+          127,
+          61,
+          0
+        ],
+        [
+          49,
+          47,
+          0
+        ],
+        [
+          5,
+          10,
+          1
+        ]
+      ],
+      "interpretation": "fair"
+    },
+    "spearman": {
+      "rho": -0.1942,
+      "p_value": 0.000718,
+      "n": 300,
+      "note": "Negative rho expected: higher composite score = better quality, lower reviewer rating (1=acceptable) = better quality."
+    }
+  },
+  "list_a_reporting_fixes": {
+    "ceiling_comparison": {
+      "sharpness": {
+        "model_kappa": 0.0254,
+        "human_ceiling_kappa": 0.2605,
+        "pct_of_ceiling_achieved": 9.8,
+        "honest_line": "0.0254 against a human ceiling of 0.2605"
+      },
+      "exposure": {
+        "model_kappa": 0.0032,
+        "human_ceiling_kappa": 0.5841,
+        "pct_of_ceiling_achieved": 0.5,
+        "honest_line": "0.0032 against a human ceiling of 0.5841"
+      },
+      "rotation": {
+        "model_kappa": 0.0317,
+        "human_ceiling_kappa": 0.3019,
+        "pct_of_ceiling_achieved": 10.5,
+        "honest_line": "0.0317 against a human ceiling of 0.3019"
+      },
+      "coverage": {
+        "model_kappa": 0.0604,
+        "human_ceiling_kappa": 0.328,
+        "pct_of_ceiling_achieved": 18.4,
+        "honest_line": "0.0604 against a human ceiling of 0.3280"
+      },
+      "inspiration": {
+        "model_kappa": 0.0021,
+        "human_ceiling_kappa": -0.0494,
+        "pct_of_ceiling_achieved": -4.3,
+        "honest_line": "0.0021 against a human ceiling of -0.0494"
+      },
+      "artifact": {
+        "model_kappa": 0.0443,
+        "human_ceiling_kappa": 0.453,
+        "pct_of_ceiling_achieved": 9.8,
+        "honest_line": "0.0443 against a human ceiling of 0.4530"
+      },
+      "metadata": {
+        "model_kappa": 0.0,
+        "human_ceiling_kappa": -0.0071,
+        "pct_of_ceiling_achieved": -0.0,
+        "honest_line": "0.0000 against a human ceiling of -0.0071"
+      },
+      "OVERALL": {
+        "model_kappa": 0.2205,
+        "human_ceiling_kappa": 0.5248,
+        "pct_of_ceiling_achieved": 42.0,
+        "honest_line": "0.2205 against a human ceiling of 0.5248"
+      }
+    },
+    "precision_recall": {
+      "sharpness": {
+        "acceptable": {
+          "precision": 0.7546,
+          "recall": 0.9156,
+          "f1": 0.8273,
+          "support": 225,
+          "note": null
+        },
+        "borderline": {
+          "precision": 0.2963,
+          "recall": 0.1081,
+          "f1": 0.1584,
+          "support": 74,
+          "note": null
+        },
+        "repeat": {
+          "precision": null,
+          "recall": 0.0,
+          "f1": null,
+          "support": 1,
+          "note": null
+        }
+      },
+      "exposure": {
+        "acceptable": {
+          "precision": 0.6309,
+          "recall": 0.9947,
+          "f1": 0.7721,
+          "support": 189,
+          "note": null
+        },
+        "borderline": {
+          "precision": 0.5,
+          "recall": 0.0096,
+          "f1": 0.0189,
+          "support": 104,
+          "note": null
+        },
+        "repeat": {
+          "precision": null,
+          "recall": 0.0,
+          "f1": null,
+          "support": 7,
+          "note": null
+        }
+      },
+      "rotation": {
+        "acceptable": {
+          "precision": 0.9138,
+          "recall": 0.219,
+          "f1": 0.3533,
+          "support": 242,
+          "note": null
+        },
+        "borderline": {
+          "precision": 0.2,
+          "recall": 0.0862,
+          "f1": 0.1205,
+          "support": 58,
+          "note": null
+        },
+        "repeat": {
+          "precision": 0.0,
+          "recall": null,
+          "f1": null,
+          "support": 0,
+          "note": "support=0 \u2014 no real examples of this class in the gold-standard set, so precision/recall here are not meaningful regardless of the model's behaviour."
+        }
+      },
+      "coverage": {
+        "acceptable": {
+          "precision": 0.7661,
+          "recall": 0.9826,
+          "f1": 0.861,
+          "support": 230,
+          "note": null
+        },
+        "borderline": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": null,
+          "support": 67,
+          "note": null
+        },
+        "repeat": {
+          "precision": 1.0,
+          "recall": 0.3333,
+          "f1": 0.5,
+          "support": 3,
+          "note": null
+        }
+      },
+      "inspiration": {
+        "acceptable": {
+          "precision": null,
+          "recall": 0.0,
+          "f1": null,
+          "support": 191,
+          "note": null
+        },
+        "borderline": {
+          "precision": 0.3607,
+          "recall": 0.6055,
+          "f1": 0.4521,
+          "support": 109,
+          "note": null
+        },
+        "repeat": {
+          "precision": 0.0,
+          "recall": null,
+          "f1": null,
+          "support": 0,
+          "note": "support=0 \u2014 no real examples of this class in the gold-standard set, so precision/recall here are not meaningful regardless of the model's behaviour."
+        }
+      },
+      "artifact": {
+        "acceptable": {
+          "precision": 0.6818,
+          "recall": 0.1923,
+          "f1": 0.3,
+          "support": 156,
+          "note": null
+        },
+        "borderline": {
+          "precision": 0.5,
+          "recall": 0.0141,
+          "f1": 0.0274,
+          "support": 142,
+          "note": null
+        },
+        "repeat": {
+          "precision": 0.0079,
+          "recall": 1.0,
+          "f1": 0.0157,
+          "support": 2,
+          "note": null
+        }
+      },
+      "metadata": {
+        "acceptable": {
+          "precision": 0.9833,
+          "recall": 1.0,
+          "f1": 0.9916,
+          "support": 295,
+          "note": null
+        },
+        "borderline": {
+          "precision": null,
+          "recall": 0.0,
+          "f1": null,
+          "support": 5,
+          "note": null
+        },
+        "repeat": {
+          "precision": null,
+          "recall": null,
+          "f1": null,
+          "support": 0,
+          "note": "support=0 \u2014 no real examples of this class in the gold-standard set, so precision/recall here are not meaningful regardless of the model's behaviour."
+        }
+      },
+      "OVERALL": {
+        "acceptable": {
+          "precision": 0.7017,
+          "recall": 0.6755,
+          "f1": 0.6883,
+          "support": 188,
+          "note": null
+        },
+        "borderline": {
+          "precision": 0.3983,
+          "recall": 0.4896,
+          "f1": 0.4393,
+          "support": 96,
+          "note": null
+        },
+        "repeat": {
+          "precision": 1.0,
+          "recall": 0.0625,
+          "f1": 0.1176,
+          "support": 16,
+          "note": null
+        }
+      }
+    },
+    "minority_class_catch_rate": {
+      "sharpness": {
+        "catch_rate": 0.1067,
+        "n_actual_bad": 75,
+        "n_caught": 8,
+        "note": "Of 75 studies reviewers marked borderline/repeat, the model also flagged 8 as borderline/repeat."
+      },
+      "exposure": {
+        "catch_rate": 0.009,
+        "n_actual_bad": 111,
+        "n_caught": 1,
+        "note": "Of 111 studies reviewers marked borderline/repeat, the model also flagged 1 as borderline/repeat."
+      },
+      "rotation": {
+        "catch_rate": 0.9138,
+        "n_actual_bad": 58,
+        "n_caught": 53,
+        "note": "Of 58 studies reviewers marked borderline/repeat, the model also flagged 53 as borderline/repeat."
+      },
+      "coverage": {
+        "catch_rate": 0.0143,
+        "n_actual_bad": 70,
+        "n_caught": 1,
+        "note": "Of 70 studies reviewers marked borderline/repeat, the model also flagged 1 as borderline/repeat."
+      },
+      "inspiration": {
+        "catch_rate": 1.0,
+        "n_actual_bad": 109,
+        "n_caught": 109,
+        "note": "Of 109 studies reviewers marked borderline/repeat, the model also flagged 109 as borderline/repeat."
+      },
+      "artifact": {
+        "catch_rate": 0.9028,
+        "n_actual_bad": 144,
+        "n_caught": 130,
+        "note": "Of 144 studies reviewers marked borderline/repeat, the model also flagged 130 as borderline/repeat."
+      },
+      "metadata": {
+        "catch_rate": 0.0,
+        "n_actual_bad": 5,
+        "n_caught": 0,
+        "note": "Of 5 studies reviewers marked borderline/repeat, the model also flagged 0 as borderline/repeat."
+      },
+      "OVERALL": {
+        "catch_rate": 0.5179,
+        "n_actual_bad": 112,
+        "n_caught": 58,
+        "note": "Of 112 studies reviewers marked borderline/repeat, the model also flagged 58 as borderline/repeat."
+      }
+    },
+    "overall_vs_per_axis_gap_explanation": {
+      "overall_kappa": 0.2205,
+      "mean_per_axis_kappa": 0.0239,
+      "max_per_axis_kappa": 0.0604,
+      "gap": 0.1966,
+      "explanation": "Overall kappa is NOT an average or aggregate of the seven per-axis kappas. It is computed independently as kappa(model.overall_flag, reviewer.global_rating) \u2014 the model's fused composite-score flag against the reviewer's separate holistic global rating column. Per-axis kappa is computed as kappa(model.<axis>_flag, reviewer.<axis>) for each of the seven axes individually. These are two distinct computations on two distinct column pairs (see compute_overall_kappa() vs compute_per_axis_kappa() in src/analysis/compute_validation.py). There is no mathematical requirement that overall track the per-axis mean, and a higher overall than per-axis mean does not indicate a bug \u2014 it indicates the composite score's weighted-sum fusion (src/fusion/score_fusion.py) can land in approximately the right overall bucket via compensating errors across axes or by being dominated by whichever axis carries the most weight, even while no individual axis reliably tracks its own corresponding reviewer rating. This is precisely why per-axis kappa, not overall kappa alone, is the correct metric for axis-level model quality."
+    }
+  },
+  "latency_cpu": {
+    "n_total_attempted": 10,
+    "n_valid_scored": 10,
+    "n_rejected_by_failsafe": 0,
+    "n_errors": 0,
+    "valid_scoring_latency": {
+      "n": 10,
+      "mean_sec": 1.9588,
+      "median_sec": 1.952,
+      "p95_sec": 2.1535,
+      "min_sec": 1.7843,
+      "max_sec": 2.1895
+    },
+    "rejected_failsafe_latency": {
+      "n": 0,
+      "mean_sec": null,
+      "median_sec": null,
+      "p95_sec": null,
+      "min_sec": null,
+      "max_sec": null
+    },
+    "errors": [],
+    "note": "valid_scoring_latency is the number that matters for the commercial decision \u2014 it reflects full pipeline cost (ingest + all 7 scorers + fusion + explanation) for studies that were actually scored. rejected_failsafe_latency is reported separately since the fail-safe gate returns early and would understate true per-study cost if averaged together with valid_scoring_latency.",
+    "device_label": "cpu"
+  }
+}

@@ -1,4 +1,5 @@
 import numpy as np
+
 from src.scorers.base import BaseScorer
 from schemas.axis_result import AxisResult, AxisName
 
@@ -17,7 +18,15 @@ class CoverageScorer(BaseScorer):
        - keeps evaluate_correlations stable when no model is passed
     """
 
-    BORDER_FRAC = 0.12
+    DEFAULT_BORDER_FRAC = 0.12
+
+    def _coverage_border_frac(self) -> float:
+        return float(
+            self.config.get("thresholds", {}).get(
+                "coverage_border_frac",
+                self.DEFAULT_BORDER_FRAC,
+            )
+        )
 
     def _to_numpy(self, pred):
         if pred is None:
@@ -59,7 +68,6 @@ class CoverageScorer(BaseScorer):
         mask = self._infer_mask(image)
 
         if mask is None:
-            # No usable prediction from model; fall back to heuristic mode.
             return self._heuristic_mode(image, metadata)
 
         mask = np.asarray(mask)
@@ -71,7 +79,6 @@ class CoverageScorer(BaseScorer):
             mask_detected = False
             min_margin_px = 0.0
         else:
-            # Threshold probabilities / logits into binary mask
             if mask.dtype != np.bool_:
                 mask_bin = mask > 0.5
             else:
@@ -124,8 +131,9 @@ class CoverageScorer(BaseScorer):
         img = (img - np.min(img)) / denom
 
         h, w = img.shape
-        bh = max(1, int(h * self.BORDER_FRAC))
-        bw = max(1, int(w * self.BORDER_FRAC))
+        border_frac = self._coverage_border_frac()
+        bh = max(1, int(h * border_frac))
+        bw = max(1, int(w * border_frac))
 
         gy = np.abs(np.diff(img, axis=0))
         gx = np.abs(np.diff(img, axis=1))
@@ -141,9 +149,7 @@ class CoverageScorer(BaseScorer):
         border_signal = float(
             (np.mean(top) + np.mean(bot) + np.mean(left) + np.mean(right)) / 4.0
         )
-        center_signal = float(
-            (np.mean(center_gy) + np.mean(center_gx)) / 2.0
-        )
+        center_signal = float((np.mean(center_gy) + np.mean(center_gx)) / 2.0)
 
         ratio = float(border_signal / (center_signal + 1e-6))
         score = float(np.clip(ratio, 0.0, 1.0))
@@ -156,6 +162,7 @@ class CoverageScorer(BaseScorer):
             raw_metrics={
                 "mask_detected": True,
                 "min_margin_px": float(min(bh, bw)),
+                "border_fraction": border_frac,
                 "border_signal": border_signal,
                 "center_signal": center_signal,
                 "ratio": ratio,

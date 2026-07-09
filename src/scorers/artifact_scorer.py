@@ -1,9 +1,9 @@
 # src/scorers/artifact_scorer.py
 from __future__ import annotations
 
+import cv2
 import numpy as np
 import torch
-import cv2
 
 from src.scorers.base import BaseScorer
 from schemas.axis_result import AxisResult, AxisName
@@ -20,8 +20,15 @@ class ArtifactScorer(BaseScorer):
     No post-hoc thresholding applied to avoid uncalibrated heuristics.
     """
 
-    def score(self, image: np.ndarray, metadata: dict) -> AxisResult:
+    def _artifact_probability_threshold(self) -> float:
+        return float(
+            self.config.get("thresholds", {}).get(
+                "artifact_probability_threshold",
+                0.5,
+            )
+        )
 
+    def score(self, image: np.ndarray, metadata: dict) -> AxisResult:
         img_224 = cv2.resize(
             image.astype(np.float32),
             (_INPUT_SIZE, _INPUT_SIZE),
@@ -37,6 +44,7 @@ class ArtifactScorer(BaseScorer):
             artifact_prob = float(torch.sigmoid(logit).item())
 
         raw_score = float(np.clip(1.0 - artifact_prob, 0.0, 1.0))
+        threshold = self._artifact_probability_threshold()
 
         return AxisResult(
             study_uid=metadata.get("study_uid", "unknown"),
@@ -45,13 +53,16 @@ class ArtifactScorer(BaseScorer):
             flag=self._flag_from_score(raw_score),
             raw_metrics={
                 "artifact_probability": round(artifact_prob, 4),
-                "source": "efficientnet_b0_ml"
+                "artifact_probability_threshold": threshold,
+                "artifact_likely": artifact_prob >= threshold,
+                "source": "efficientnet_b0_ml",
             },
             rationale=(
-                f"Artifact probability: {artifact_prob:.3f}. "
+                f"Artifact probability: {artifact_prob:.3f} "
+                f"(threshold={threshold:.2f}). "
                 + (
                     "Low likelihood of artifacts detected."
-                    if artifact_prob < 0.5
+                    if artifact_prob < threshold
                     else "Possible artifacts detected."
                 )
             ),

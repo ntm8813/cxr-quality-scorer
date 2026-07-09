@@ -2,7 +2,6 @@ from __future__ import annotations
 from pathlib import Path
 from src.reports.pdf_report_generator import generate_batch_report
 
-
 def main() -> None:
     Path("reports/pdf").mkdir(parents=True, exist_ok=True)
 

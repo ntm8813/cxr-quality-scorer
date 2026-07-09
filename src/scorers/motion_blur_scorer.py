@@ -1,9 +1,9 @@
 # src/scorers/motion_blur_scorer.py
 from __future__ import annotations
 
+import cv2
 import numpy as np
 import torch
-import cv2
 
 from src.scorers.base import BaseScorer
 from schemas.axis_result import AxisResult, AxisName
@@ -20,8 +20,15 @@ class MotionBlurScorer(BaseScorer):
     SharpnessScorer for later fusion-level aggregation.
     """
 
-    def score(self, image: np.ndarray, metadata: dict) -> AxisResult:
+    def _blur_probability_threshold(self) -> float:
+        return float(
+            self.config.get("thresholds", {}).get(
+                "motion_blur_probability_threshold",
+                0.4,
+            )
+        )
 
+    def score(self, image: np.ndarray, metadata: dict) -> AxisResult:
         img_224 = cv2.resize(
             image.astype(np.float32),
             (_INPUT_SIZE, _INPUT_SIZE),
@@ -37,6 +44,7 @@ class MotionBlurScorer(BaseScorer):
             blur_prob = float(torch.sigmoid(logit).item())
 
         raw_score = float(np.clip(1.0 - blur_prob, 0.0, 1.0))
+        threshold = self._blur_probability_threshold()
 
         return AxisResult(
             study_uid=metadata.get("study_uid", "unknown"),
@@ -45,13 +53,16 @@ class MotionBlurScorer(BaseScorer):
             flag=self._flag_from_score(raw_score),
             raw_metrics={
                 "blur_probability": round(blur_prob, 4),
-                "source": "efficientnet_b0_ml"
+                "blur_probability_threshold": threshold,
+                "motion_blur_likely": blur_prob >= threshold,
+                "source": "efficientnet_b0_ml",
             },
             rationale=(
-                f"ML blur classifier probability: {blur_prob:.3f}. "
+                f"ML blur classifier probability: {blur_prob:.3f} "
+                f"(threshold={threshold:.2f}). "
                 + (
                     "No significant motion blur detected."
-                    if blur_prob < 0.4
+                    if blur_prob < threshold
                     else "Motion blur detected."
                 )
             ),

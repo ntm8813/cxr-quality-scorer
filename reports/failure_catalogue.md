@@ -2,8 +2,8 @@
 
 ## Summary
 - Studies analysed: **300**
-- Per-axis disagreements: **1057** (50.3% of all axis evaluations)
-- Overall flag disagreements: **147** (49.0% of studies)
+- Per-axis disagreements: **1017** (48.4% of all axis evaluations)
+- Overall flag disagreements: **125** (41.7% of studies)
 
 ## Rotation Estimation Method Distribution
 
@@ -22,12 +22,12 @@ _'rotation_estimation_method' not found in data\predictions\model_v1.csv. This c
 
 | Axis | FN_REPEAT | FP_REPEAT | FN_BORDER | FP_BORDER | OVER | UNDER |
 |------|-----------|-----------|-----------|-----------|------|-------|
-| sharpness | 1 | 0 | 58 | 52 | 0 | 0 |
-| exposure | 7 | 0 | 100 | 4 | 0 | 0 |
-| rotation | 0 | 217 | 4 | 31 | 0 | 0 |
-| coverage | 2 | 0 | 67 | 6 | 0 | 0 |
+| sharpness | 1 | 0 | 66 | 19 | 0 | 0 |
+| exposure | 7 | 0 | 103 | 1 | 0 | 0 |
+| rotation | 0 | 217 | 5 | 20 | 0 | 0 |
+| coverage | 2 | 0 | 67 | 4 | 0 | 0 |
 | inspiration | 0 | 117 | 0 | 117 | 0 | 0 |
-| artifact | 0 | 250 | 13 | 6 | 0 | 0 |
+| artifact | 0 | 250 | 14 | 2 | 0 | 0 |
 | metadata | 0 | 0 | 5 | 0 | 0 | 0 |
 
 ## Top 20 Worst Disagreements (by severity)
@@ -35,16 +35,17 @@ _'rotation_estimation_method' not found in data\predictions\model_v1.csv. This c
 | Study UID | Axis | Model | Consensus | Mode |
 |-----------|------|-------|-----------|------|
 | 00006583_003 | inspiration | repeat | 1 | FP_REPEAT |
-| 00006527_001 | rotation | repeat | 1 | FP_REPEAT |
+| 00006575_001 | artifact | repeat | 1 | FP_REPEAT |
+| 00006569_001 | artifact | repeat | 1 | FP_REPEAT |
+| 00006519_012 | rotation | repeat | 1 | FP_REPEAT |
+| 00006517_000 | artifact | repeat | 1 | FP_REPEAT |
+| 00006517_000 | inspiration | repeat | 1 | FP_REPEAT |
+| 00004006_049 | rotation | repeat | 1 | FP_REPEAT |
 | 00004006_016 | rotation | repeat | 1 | FP_REPEAT |
 | 00004001_003 | rotation | repeat | 1 | FP_REPEAT |
 | 00003990_016 | artifact | repeat | 1 | FP_REPEAT |
 | 00003990_016 | rotation | repeat | 1 | FP_REPEAT |
 | 00003990_016 | exposure | acceptable | 3 | FN_REPEAT |
-| 00003967_000 | artifact | repeat | 1 | FP_REPEAT |
-| 00006519_012 | rotation | repeat | 1 | FP_REPEAT |
-| 00006517_000 | artifact | repeat | 1 | FP_REPEAT |
-| 00006517_000 | inspiration | repeat | 1 | FP_REPEAT |
 | 00006502_001 | rotation | repeat | 1 | FP_REPEAT |
 | 00006482_000 | artifact | repeat | 1 | FP_REPEAT |
 | 00006482_000 | rotation | repeat | 1 | FP_REPEAT |
@@ -53,7 +54,6 @@ _'rotation_estimation_method' not found in data\predictions\model_v1.csv. This c
 | 00006469_001 | artifact | repeat | 1 | FP_REPEAT |
 | 00006469_001 | inspiration | repeat | 1 | FP_REPEAT |
 | 00006469_001 | rotation | repeat | 1 | FP_REPEAT |
-| 00006469_000 | artifact | repeat | 1 | FP_REPEAT |
 
 ## Interpretation
 

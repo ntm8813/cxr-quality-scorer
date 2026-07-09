@@ -3,6 +3,7 @@ project_code: MTV-INT-RAD-003
 image:
   resize: 1024
   interpolation: bilinear
+
 thresholds:
   inspiration_min_ratio: 0.18
   inspiration_target_ratio: 0.45
@@ -12,20 +13,34 @@ thresholds:
   rotation_borderline_deg: 5
   coverage_margin_px: 10
   coverage_margin_min_px: 10
+  coverage_border_frac: 0.12
+
   ei_deviation_min: -1.0
   ei_deviation_max: 1.0
   ei_deviation_borderline_min: -2.0
   ei_deviation_borderline_max: 2.0
+
+  exposure_clip_low: 0.03
+  exposure_clip_high: 0.97
+  exposure_dynamic_weight: 0.55
+  exposure_clipping_weight: 0.30
+  exposure_di_weight: 0.15
+
+  artifact_probability_threshold: 0.5
+  motion_blur_probability_threshold: 0.4
+
 score_ranges:
   repeat_max: 45
   borderline_max: 60
+
 axis_weights:
-  sharpness: 0.2
-  exposure: 0.2
-  rotation: 0.15
-  coverage: 0.15
-  inspiration: 0.1
-  artifact: 0.15
-  metadata: 0.05
+  sharpness: 0.2105
+  exposure: 0.2105
+  rotation: 0.1579
+  coverage: 0.1579
+  inspiration: 0.1053
+  artifact: 0.1579
+  metadata: 0.0
+
 pipeline:
   explain: true

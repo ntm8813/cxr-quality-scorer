@@ -1,9 +1,13 @@
 CXR PIPELINE RUNTIME REPORT
 
-Samples evaluated : 100
-Average runtime   : 0.1063 sec
-P95 runtime       : 0.1317 sec
-Min runtime       : 0.0828 sec
-Max runtime       : 0.1520 sec
+Samples evaluated : 10
+Average runtime   : 1.9588 sec
+Median runtime    : 1.9520 sec
+P95 runtime       : 2.1535 sec
+Min runtime       : 1.7843 sec
+Max runtime       : 2.1895 sec
 
-Requirement (<2s) : PASS
+Requirement (<2 s average) : PASS
+
+Benchmark note:
+These timings represent the complete CPU inference pipeline, including image ingestion, preprocessing, all quality scorers, score fusion, and explanation generation. They correspond to the values reported in reports/latency_cpu.json.

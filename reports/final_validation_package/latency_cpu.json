@@ -1,0 +1,25 @@
+{
+  "n_total_attempted": 10,
+  "n_valid_scored": 10,
+  "n_rejected_by_failsafe": 0,
+  "n_errors": 0,
+  "valid_scoring_latency": {
+    "n": 10,
+    "mean_sec": 1.9588,
+    "median_sec": 1.952,
+    "p95_sec": 2.1535,
+    "min_sec": 1.7843,
+    "max_sec": 2.1895
+  },
+  "rejected_failsafe_latency": {
+    "n": 0,
+    "mean_sec": null,
+    "median_sec": null,
+    "p95_sec": null,
+    "min_sec": null,
+    "max_sec": null
+  },
+  "errors": [],
+  "note": "valid_scoring_latency is the number that matters for the commercial decision \u2014 it reflects full pipeline cost (ingest + all 7 scorers + fusion + explanation) for studies that were actually scored. rejected_failsafe_latency is reported separately since the fail-safe gate returns early and would understate true per-study cost if averaged together with valid_scoring_latency.",
+  "device_label": "cpu"
+}
