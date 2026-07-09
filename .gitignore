@@ -24,3 +24,7 @@ __pycache__/
 
 # DVC cache
 .dvc/cache/
+.coverage
+coverage.xml
+htmlcov/
+.pytest_cache/
